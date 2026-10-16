@@ -43,16 +43,27 @@ jobs:
           ls -la /home/runner/work/CrossMix-OS/CrossMix-OS
           cd /home/runner/work/CrossMix-OS/CrossMix-OS
           /usr/local/bin/7zz a RetroArch/default_config.7z RetroArch/retroarch.cfg RetroArch/.retroarch/config/*
-      - name: Zipping release
+      - name: Packaging release (7z; auto-split if over GitHub 2 GiB asset limit)
         run: |
           shopt -s dotglob
           cd /home/runner/work/CrossMix-OS/CrossMix-OS
-          zip -r "/home/runner/work/CrossMix-OS/CrossMix-OS_v${{ env.BUILD_VERSION }}.zip" ./*
+          7zz a -mx=7 "/home/runner/work/CrossMix-OS/CrossMix-OS_v${{ env.BUILD_VERSION }}.7z" ./*
       - name: Create Release
-        uses: marvinpinto/action-automatic-releases@latest
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          title: "CrossMix-OS CE v${{ env.BUILD_VERSION }}"
-          prerelease: false
-          files: "/home/runner/work/CrossMix-OS/CrossMix-OS_v${{ env.BUILD_VERSION }}.zip"
-          draft: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd /home/runner/work/CrossMix-OS
+          ASSET="CrossMix-OS_v${{ env.BUILD_VERSION }}.7z"
+          SIZE=$(stat -c%s "$ASSET" 2>/dev/null || echo 0)
+          if [ "$SIZE" -ge 2000000000 ]; then
+            echo "Single archive is $SIZE bytes; rebuilding as 1900 MB split volumes (GitHub 2 GiB asset limit)."
+            rm -f "$ASSET"*
+            ( shopt -s dotglob; cd CrossMix-OS && 7zz a -mx=7 -v1900m "../$ASSET" ./* )
+          fi
+          # Drop any draft left over from a previous failed run on this tag
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            && gh release delete "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --yes || true
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --title "CrossMix-OS CE v${{ env.BUILD_VERSION }}" \
+            --notes "Community Edition baseline. Original work by cizia64 and contributors (GPL-3.0). If the download comes in parts (.7z.001, .7z.002, ...), download all of them into the same folder and extract with: 7z x CrossMix-OS_v${{ env.BUILD_VERSION }}.7z.001" \
+            --draft CrossMix-OS_v${{ env.BUILD_VERSION }}.7z*
