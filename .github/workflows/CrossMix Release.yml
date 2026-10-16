@@ -52,7 +52,7 @@ jobs:
         uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          title: "CrossMix-OS v${{ env.BUILD_VERSION }}"
+          title: "CrossMix-OS CE v${{ env.BUILD_VERSION }}"
           prerelease: false
           files: "/home/runner/work/CrossMix-OS/CrossMix-OS_v${{ env.BUILD_VERSION }}.zip"
           draft: true
