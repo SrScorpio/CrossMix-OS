@@ -1,5 +1,5 @@
 #!/bin/sh
-# CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.4
+# CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.5
 # Channel: served by ota_update.sh when releases/latest has nothing newer.
 # Fixes:
 #  - crossmix-version.txt pinned to 1.4.0-ce.2 (legacy upstream hotfixes
@@ -8,13 +8,14 @@
 #  - firmware wizard: MinFwVersion matches the bundled payload (1.1.1/20251128)
 #    and _FirmwareCheck.sh falls back to the newest bundled firmware
 #  - new System Tools entry: TOOLS / Firmware Update (status + on-demand run)
+#  - System Tools rebuilds its menu cache when scripts change (entry visible)
 # Non-interactive by design: the OTA flow runs it as `curl ... | sh`.
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.4"
+Remote_HotfixVersion="1.4.0-ce.2.5"
 Remote_HotfixDate="2026-10-17"
-Remote_HotfixDesc="- firmware fix + Firmware Update entry in System Tools"
+Remote_HotfixDesc="- menu cache fix + chmod + Firmware Update entry"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
@@ -62,6 +63,17 @@ main() {
         echo -e "${RED}FAILED${NC} (extract - see /tmp/crossmix_hotfix.log)"
         exit 1
     fi
+
+    # los scripts deben quedar ejecutables aunque el zip no traiga los permisos
+    chmod a+x "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Update.sh" 2>/dev/null
+    chmod a+x "/mnt/SDCARD/Apps/SystemTools/launch.sh" 2>/dev/null
+    chmod a+x "/mnt/SDCARD/System/starts/_FirmwareCheck.sh" 2>/dev/null
+    chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_ota_release.sh" 2>/dev/null
+
+    # System Tools cachea el menu en SQLite y no lo reescanea: se borra para que
+    # la entrada nueva aparezca al abrirlo (se reconstruye en ~2 s).
+    rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/Menu_cache7.db"
+
     echo "$Remote_HotfixVersion" > "$local_hotfix_file"
     rm -f /tmp/crossmix_hotfix.zip
     sync
