@@ -1,16 +1,20 @@
 <div align="center">
-    <img src="_assets/readme/TSP-Logo.png">
-    
-_Get the best from your TrimUI Smart Pro_  
+    <img src="_assets/readme/banner-se.png" alt="CrossMix-OS SE — Scorpio Edition">
 </div>
 
-> **CrossMix-OS CE** — Community Edition, maintained fork by [SrScorpio](https://github.com/SrScorpio).
+<div align="center">
+
+**Scorpio Edition** — red is the new blue. Same soul, sharper edge.  
+_Get the best from your TrimUI Smart Pro_
+
+</div>
+
+> **CrossMix-OS SE** — Scorpio Edition, maintained fork by [SrScorpio](https://github.com/SrScorpio).
 > Based on [CrossMix-OS](https://github.com/cizia64/CrossMix-OS) by **cizia64** and contributors — all credit for the original work is theirs. Same license: GPL-3.0.
 
-
 <div align="center">
-  <a href="https://github.com/SrScorpio/CrossMix-OS/releases/latest">
-    <img src="_assets/readme/download.png" alt="Download" style="width: 300px;">
+  <a href="https://github.com/SrScorpio/CrossMix-OS-SE/releases/latest">
+    <img src="_assets/readme/download-se.png" alt="Download" style="width: 300px;">
   </a>
 </div>
 
