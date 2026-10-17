@@ -152,7 +152,29 @@ else
 
         sync
 
+        # Firmware payload: prefer the exact version declared in MinFwVersion.txt,
+        # fall back to the newest bundle shipped in the image (names sort per segment).
         FIRMWARE_PATH="/mnt/SDCARD/trimui/firmwares/firmware_${current_device}_v${Required_FW_Version}_${Required_FW_Revision}.7z.001"
+        if [ ! -f "$FIRMWARE_PATH" ]; then
+            NEWEST_PAYLOAD=$(ls -1 /mnt/SDCARD/trimui/firmwares/firmware_${current_device}_v*.7z.001 2>/dev/null | sort | tail -1)
+            if [ -n "$NEWEST_PAYLOAD" ]; then
+                FIRMWARE_PATH="$NEWEST_PAYLOAD"
+                FW_BASENAME=$(basename "$FIRMWARE_PATH")
+                FW_TARGET_VERSION=$(echo "$FW_BASENAME" | sed -n 's/^firmware_[a-z0-9]*_v\([0-9][0-9.]*\)_\([0-9][0-9]*\)\.7z\.001$/\1/p')
+                FW_TARGET_REVISION=$(echo "$FW_BASENAME" | sed -n 's/^firmware_[a-z0-9]*_v\([0-9][0-9.]*\)_\([0-9][0-9]*\)\.7z\.001$/\2/p')
+                if [ -n "$FW_TARGET_VERSION" ] && [ -n "$FW_TARGET_REVISION" ]; then
+                    echo "MinFwVersion declares ${Required_FW_Version}/${Required_FW_Revision} but payload is missing; using bundled ${FW_TARGET_VERSION}/${FW_TARGET_REVISION}."
+                    Required_FW_Version="$FW_TARGET_VERSION"
+                    Required_FW_Revision="$FW_TARGET_REVISION"
+                fi
+            fi
+        fi
+
+        if [ ! -f "$FIRMWARE_PATH" ]; then
+            echo "No firmware payload found in /mnt/SDCARD/trimui/firmwares/ for device ${current_device}."
+            echo "Firmware update cannot proceed; download the payload from the SE release assets."
+        fi
+
         FIRMWARE_FILE="trimui_tg5040.awimg"
         message="Current   FW version: $Current_FW_Version - $Current_FW_Revision\nRequired FW version: $Required_FW_Version - $Required_FW_Revision\n \n \n"
         crc_verified=false

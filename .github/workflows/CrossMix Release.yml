@@ -31,6 +31,17 @@ jobs:
       - name: Extract RetroArch cores
         run: |
           find "$GITHUB_WORKSPACE/RetroArch/.retroarch/cores" -name "*.7z" -execdir 7zz x {} \; -execdir rm {} \;
+      - name: Validate firmware payload consistency
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          REQ_V=$(sed -n '1p' trimui/firmwares/MinFwVersion.txt | tr -d '\r')
+          REQ_R=$(sed -n '2p' trimui/firmwares/MinFwVersion.txt | tr -d '\r')
+          F="trimui/firmwares/firmware_tsp_v${REQ_V}_${REQ_R}.7z.001"
+          if [ ! -f "$F" ]; then
+            echo "::error::MinFwVersion.txt declares ${REQ_V}/${REQ_R} but $F is missing"
+            exit 1
+          fi
+          echo "Firmware payload OK: $F"
       - name: Cleaning image...
         run: |
           cd "$GITHUB_WORKSPACE"
