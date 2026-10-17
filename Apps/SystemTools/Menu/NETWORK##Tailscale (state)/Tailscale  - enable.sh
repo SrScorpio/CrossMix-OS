@@ -16,7 +16,7 @@ TAILSCALED_STATE_FILE="/mnt/SDCARD/System/etc/tailscale/tailscaled.state"
 JSON_FILE="/mnt/SDCARD/System/etc/crossmix.json"
 LOGIN_LOG="/mnt/SDCARD/System/etc/tailscale/login.txt"
 export STATE_DIRECTORY=/mnt/SDCARD/System/etc/tailscale
-URL="https://github.com/SrScorpio/CrossMix-OS/raw/refs/heads/main/_assets/resources/tailscale.7z"
+URL="https://github.com/SrScorpio/CrossMix-OS-SE/raw/refs/heads/main/_assets/resources/tailscale.7z"
 
 # Check internet connection
 
