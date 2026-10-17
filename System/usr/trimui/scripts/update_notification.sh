@@ -58,23 +58,39 @@ check_major_release() {
     if echo "$release_json" | grep -q '"message": "Not Found"'; then
         log "No GitHub releases found."
         rm -f "$RELEASE_META"
-        exit 1
+        return 1
     fi
 
-    asset=$(echo "$release_json" | jq '.assets[]? | select((.name | contains("CrossMix-OS_v")) and (.name | endswith(".zip")))')
-    if [ -z "$asset" ]; then
-        log "Github API Request has failed or latest release has no CrossMix-OS_v*.zip asset."
+    # Select exactly ONE image asset for the tag: .7z preferred, legacy .zip kept.
+    # Excluded: kit/firmware/checksum bundles and any other attachments. Split
+    # multipart images (.7z.001/.002) are NOT supported and never selected.
+    asset=$(echo "$release_json" | jq -r '
+        [ .assets[]?
+          | select(.name != null)
+          | select(.name | test("^CrossMix-OS_v[0-9A-Za-z._-]*\\.(zip|7z)$"))
+          | select(.name | test("kit|firmware|checksum|sha256|md5"; "i") | not)
+          | {name: .name, url: .browser_download_url, size: .size, created: .created_at,
+             prio: (if (.name | endswith(".7z")) then 0 else 1 end)} ]
+        | sort_by(.prio, .name)
+        | (if length > 0 then .[0] else null end)
+        | tostring' 2>/dev/null)
+    if [ -z "$asset" ] || [ "$asset" = "null" ]; then
+        if echo "$release_json" | jq -e '[.assets[]? | select((.name // "") | test("\\.7z\\.00[0-9]$"))] | length > 0' >/dev/null 2>&1; then
+            log "Release contains split multipart images (.7z.001); split archives are not supported by this updater."
+        else
+            log "Github API Request has failed or latest release has no CrossMix-OS_v image asset (.7z/.zip)."
+        fi
         rm -f "$RELEASE_META"
-        exit 1
+        return 1
     fi
 
-    url=$(echo "$asset" | jq -r '.browser_download_url')
+    url=$(echo "$asset" | jq -r '.url')
     name=$(echo "$asset" | jq -r '.name')
     size=$(echo "$asset" | jq -r '.size')
-    created=$(echo "$asset" | jq -r '.created_at')
+    created=$(echo "$asset" | jq -r '.created')
 
     release_full_version="${name#CrossMix-OS_v}"
-    release_full_version="${release_full_version%.zip}"
+    release_full_version="${release_full_version%.*}"
     remote_version_core="${release_full_version%-dev*}"
 
     local_full_version=$(cat /mnt/SDCARD/System/usr/trimui/crossmix-version.txt 2>/dev/null)
