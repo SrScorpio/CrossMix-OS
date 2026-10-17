@@ -13,9 +13,9 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.14"
+Remote_HotfixVersion="1.4.0-ce.2.15"
 Remote_HotfixDate="2026-10-17"
-Remote_HotfixDesc="- firmware update back to the boot flow (menu entry removed)"
+Remote_HotfixDesc="- OTA notifier now selects the exact tag image (.7z/.zip), excludes attachments/split and returns to hotfix flow instead of killing the shell (#28)"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
