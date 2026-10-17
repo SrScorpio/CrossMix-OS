@@ -18,6 +18,21 @@ _Get the best from your TrimUI Smart Pro_
   </a>
 </div>
 
+<div align="center">
+
+<a href="https://nan.builders/?ref=built-with-nan">
+ <picture>
+ <source media="(prefers-color-scheme: light)" srcset="https://nan.builders/badge/built-with-nan-light.svg">
+ <img width="266" src="https://nan.builders/badge/built-with-nan-dark.svg" alt="Built with NaN">
+ </picture>
+</a>
+
+[![Built with NaN](https://nan.builders/badge/built-with-nan-compact.svg)](https://nan.builders/?ref=built-with-nan)
+
+_Built with [NaN](https://nan.builders/?ref=built-with-nan) — the agent platform behind this fork._
+
+</div>
+
 &nbsp;<br/>
 
 
