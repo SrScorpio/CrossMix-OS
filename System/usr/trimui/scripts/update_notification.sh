@@ -75,7 +75,8 @@ check_major_release() {
           | select(.name != null and (.name | type) == "string")
           | select(.name == ("CrossMix-OS_v" + $ver + ".7z")
                    or .name == ("CrossMix-OS_v" + $ver + ".zip"))
-          | select((.browser_download_url // "") | (type == "string" and startswith("http")))
+          | select((.browser_download_url // "") | (type == "string"
+              and test("^https?://([^/[:space:][:cntrl:]])([^[:space:][:cntrl:]]*)$")))
           | select((.size // null) | type == "number")
           | select(.size > 0 and .size == (.size | floor))
           | select((.created_at // null) | type == "string")
