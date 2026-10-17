@@ -9,7 +9,7 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.1"
+Remote_HotfixVersion="1.4.0-ce.2.2"
 Remote_HotfixDate="2026-10-17"
 Remote_HotfixDesc="- version-key fix + .7z asset parsing"
 

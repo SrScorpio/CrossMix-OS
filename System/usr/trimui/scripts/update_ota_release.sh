@@ -71,7 +71,7 @@ get_release_info() {
 
     # Github source api url
 
-    Release_assets_info=$(curl -k -s https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest)
+    Release_assets_info=$(curl -k -s -L https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest)
 
     if echo "$Release_assets_info" | grep -q '"message": "Not Found"'; then
         rm "$updatedir/.CrossMixUpdateAvailable" 2>/dev/null

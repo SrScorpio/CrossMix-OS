@@ -2,7 +2,7 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 
 run_bootstrap() {
-	curl -k -s https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/scripts/ota_bootstrap.sh | sh
+	curl -k -s -L https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/scripts/ota_bootstrap.sh | sh
 }
 
 main() {
@@ -24,7 +24,7 @@ main() {
 
 			echo -e "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n" >>"$updatedir/ota_hotfix.log"
 			echo -e "${timestamp}\n" >>"$updatedir/ota_hotfix.log"
-			curl -k -s "$url" | sh | tee -a "$updatedir/ota_hotfix.log"
+			curl -k -s -L "$url" | sh | tee -a "$updatedir/ota_hotfix.log"
 
 		else
 			clear
