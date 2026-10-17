@@ -104,6 +104,19 @@ check_major_release() {
     return 1
 }
 
+# Empaqueta una version en un entero comparable: cada componente a 3 digitos.
+# "1.4.0-ce.2.10" -> "1.4.0.2.10" -> 001004000002010. Necesario porque las
+# versiones CE llevan sufijo (-ce) y restar puntos no da un numero valido.
+ver_key() {
+    v=$(echo "$1" | sed 's/[^0-9.]/./g' | tr -s '.' | sed 's/^\.//; s/\.$//')
+    a=$(echo "$v" | cut -d. -f1); a=${a:-0}
+    b=$(echo "$v" | cut -d. -f2); b=${b:-0}
+    c=$(echo "$v" | cut -d. -f3); c=${c:-0}
+    d=$(echo "$v" | cut -d. -f4); d=${d:-0}
+    e=$(echo "$v" | cut -d. -f5); e=${e:-0}
+    printf '%03d%03d%03d%03d%03d' "$a" "$b" "$c" "$d" "$e"
+}
+
 # Check hotfix availability for a given base version (e.g., 1.3.0)
 check_hotfix() {
     base_version="$1"
@@ -134,7 +147,7 @@ check_hotfix() {
         local_hotfix=$(echo "$remote_hotfix" | sed 's/\(.*\).$/\10/')
     fi
 
-    if [ "$(echo "$remote_hotfix" | tr -d '.')" -gt "$(echo "$local_hotfix" | tr -d '.')" ]; then
+    if [ "$(ver_key "$remote_hotfix")" -gt "$(ver_key "$local_hotfix")" ]; then
         cat >"$HOTFIX_META" <<EOF
 {
   "for_version": "$base_version",
