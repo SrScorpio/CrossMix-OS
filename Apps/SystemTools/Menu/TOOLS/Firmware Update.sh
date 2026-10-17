@@ -1,33 +1,37 @@
 #!/bin/sh
-# CrossMix-OS SE - manual entry point for the firmware check/update flow.
+# CrossMix-OS SE - manual entry for the firmware check/update flow.
 #
 # The real flow lives in /mnt/SDCARD/System/starts/_FirmwareCheck.sh and runs
-# automatically at boot, which makes it invisible: there is no menu item
-# upstream. This wrapper exposes it from System Tools and shows the current
-# state (current FW, required FW, bundled payload) before doing anything.
+# automatically at boot: upstream has no menu item, so it is undiscoverable.
+# This wrapper shows the actual state and hands over to the official flow.
+#
+# UI: infoscreen.sh, blocking, returns the pressed key - same pattern as the
+# other TOOLS scripts. infoscreen2 in background does not work here: the
+# subshell is killed when the menu entry returns, so nothing gets displayed.
 
 export LD_LIBRARY_PATH="/mnt/SDCARD/System/lib:/usr/trimui/lib:$LD_LIBRARY_PATH"
 export PATH="/mnt/SDCARD/System/bin:/mnt/SDCARD/System/usr/trimui/scripts:$PATH"
 
 FWFILE="/mnt/SDCARD/trimui/firmwares/MinFwVersion.txt"
 CHECK="/mnt/SDCARD/System/starts/_FirmwareCheck.sh"
-INFOSCREEN="/mnt/SDCARD/System/usr/trimui/scripts/infoscreen2.sh"
-FONT="/mnt/SDCARD/Themes/CrossMix - OS/wqy-microhei.ttf"
-[ -f "$FONT" ] || FONT="/mnt/SDCARD/System/res/font.ttf"
+INFO="infoscreen.sh"
+LOG="/mnt/SDCARD/Apps/SystemTools/Logs/Firmware Update.log"
+mkdir -p "$(dirname "$LOG")" 2>/dev/null || LOG="/tmp/firmware_update.log"
 
-show() { # show <mensaje>  (informativo, se cierra solo)
-    $INFOSCREEN -m "$1" -fs 12 -fi 0 -p top-left -fb -ff "$FONT" &
-    sleep 5
-    pkill -f infoscreen2
-}
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
+
+log "--- start"
+log "FWFILE exists=$([ -f "$FWFILE" ] && echo yes || echo no) CHECK exists=$([ -f "$CHECK" ] && echo yes || echo no)"
 
 if [ ! -f "$FWFILE" ]; then
-    show "Firmware check unavailable\n \nMissing: trimui/firmwares/MinFwVersion.txt\nReinstall the SE payload or apply the latest hotfix."
-    exit 1
-fi
+    $INFO -m "Firmware check unavailable.
 
-if [ ! -x "$CHECK" ] && [ ! -f "$CHECK" ]; then
-    show "Firmware check unavailable\n \nMissing: System/starts/_FirmwareCheck.sh"
+Missing file:
+trimui/firmwares/MinFwVersion.txt
+
+Apply the latest hotfix (Check Update)
+or reinstall the SE payload." -fs 22 -t 8
+    log "abort: MinFwVersion.txt missing"
     exit 1
 fi
 
@@ -36,37 +40,63 @@ cur_ver=$(cat /etc/version 2>/dev/null)
 req_ver=$(sed -n '1p' "$FWFILE" | tr -d '\r ')
 req_rev=$(sed -n '2p' "$FWFILE" | tr -d '\r ')
 
-# Newest bundled payload, same rule as _FirmwareCheck.sh
 payload=$(ls -1 /mnt/SDCARD/trimui/firmwares/firmware_*_v*.7z.001 2>/dev/null | sort | tail -1)
-if [ -n "$payload" ]; then
-    payload_info="Payload: $(basename "$payload")"
-else
-    payload_info="Payload: NOT FOUND in trimui/firmwares"
-fi
-
-msg="Firmware status\n \nCurrent FW:  ${cur_ver:-unknown} - ${cur_rev:-unknown}\nRequired FW: $req_ver - $req_rev\n$payload_info\n \n"
+log "current=$cur_ver/$cur_rev required=$req_ver/$req_rev payload=$payload"
 
 case "$cur_rev" in
     ''|*[!0-9]*)
-        show "${msg}Cannot read the installed firmware revision."
+        $INFO -m "Cannot read the installed firmware revision.
+
+DISTRIB_DESCRIPTION:
+$(grep 'DISTRIB_DESCRIPTION' /etc/openwrt_release)" -fs 20 -t 8
+        log "abort: unreadable revision"
         exit 1
         ;;
 esac
 
+if [ -n "$payload" ]; then
+    payload_name=$(basename "$payload")
+else
+    payload_name="NOT FOUND in trimui/firmwares"
+fi
+
+msg="Firmware status
+
+Current  FW: $cur_ver - $cur_rev
+Required FW: $req_ver - $req_rev
+Payload: $payload_name"
+
 if [ "$cur_rev" -ge "$req_rev" ]; then
-    show "${msg}Firmware is up to date. Nothing to do."
+    $INFO -m "$msg
+
+Firmware is up to date.
+Nothing to do." -fs 20 -t 8
+    log "up to date, exit"
     exit 0
 fi
 
 if [ -z "$payload" ]; then
-    show "${msg}The update payload is missing.\nDownload it from the SE release assets\nand place it in trimui/firmwares/."
+    $INFO -m "$msg
+
+The update payload is missing.
+
+Download firmware_tsp_v${req_ver}_${req_rev}.7z.001
+and .002 from the SE release assets and
+copy both into trimui/firmwares/." -fs 18 -t 12
+    log "abort: payload missing"
     exit 1
 fi
 
-$INFOSCREEN -m "${msg}A: run the firmware update flow\nB: cancel" -fs 12 -fi 0 -p top-left -fb -ff "$FONT" -k rout A "" -k rin B ""
-if [ "$?" -eq 14 ]; then
-    pkill -f infoscreen2
+button=$($INFO -m "$msg
+
+A: run the firmware update
+B: cancel" -fs 20 -k "A B")
+log "button=$button"
+
+if [ "$button" = "A" ]; then
+    log "handing over to _FirmwareCheck.sh"
     exec "$CHECK"
 fi
-pkill -f infoscreen2
+
+log "cancelled by user"
 exit 0
