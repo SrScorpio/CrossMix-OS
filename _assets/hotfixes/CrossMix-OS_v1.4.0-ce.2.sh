@@ -13,9 +13,9 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.6"
+Remote_HotfixVersion="1.4.0-ce.2.7"
 Remote_HotfixDate="2026-10-17"
-Remote_HotfixDesc="- Firmware Update entry: blocking UI + logging"
+Remote_HotfixDesc="- Firmware Update entry: short single-line screens"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
