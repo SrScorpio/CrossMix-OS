@@ -7,6 +7,8 @@ echo 1416000 >/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
 PATH="/mnt/SDCARD/System/bin:$PATH"
 export LD_LIBRARY_PATH="/mnt/SDCARD/System/lib:/usr/trimui/lib:$LD_LIBRARY_PATH"
 database_file="/mnt/SDCARD/Apps/SystemTools/Menu/Menu_cache7.db"
+menu_dir="/mnt/SDCARD/Apps/SystemTools/Menu"
+menu_stamp="$menu_dir/.cache_stamp"
 CurrentTheme=$(/mnt/SDCARD/System/bin/jq -r .theme /mnt/UDISK/system.json)
 CrossMix_Style=$(/mnt/SDCARD/System/bin/jq -r '.["CROSSMIX STYLE"]' "/mnt/SDCARD/System/etc/crossmix.json")
 mkdir -p /mnt/SDCARD/System/starts/
@@ -41,6 +43,12 @@ else
     if [ "$contains_hashes" -gt 0 ]; then
       rm -f "$database_file"
       echo "Corrupted System Tools database, re-building..."
+      LaunchMessage="Re-Building Menu..."
+    elif [ ! -f "$menu_stamp" ] || [ -n "$(find "$menu_dir" -mindepth 1 -maxdepth 3 -name '*.sh' -newer "$menu_stamp" 2>/dev/null | head -n 1)" ]; then
+      # A menu script was added or updated after the last build: the cache is
+      # stale and would hide it. Drop it and rescan (takes a couple of seconds).
+      rm -f "$database_file"
+      echo "Menu scripts changed since last build, re-building..."
       LaunchMessage="Re-Building Menu..."
     else
       LaunchMessage="Loading..."
@@ -371,5 +379,8 @@ while IFS='|' read -r disp path; do
     echo "==== Updated \"$disp_withoutvalue\" to \"$disp_withvalue\""
 done
 
+# Mark the moment the cache was built: the rebuild rewrites some .sh files in
+# Menu/, and without a stamp newer than them the next launch would rebuild again.
+touch "$menu_stamp"
 
 sync
