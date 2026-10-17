@@ -42,6 +42,7 @@ jobs:
           rm -rf /home/runner/work/CrossMix-OS/CrossMix-OS/.github
           ls -la /home/runner/work/CrossMix-OS/CrossMix-OS
           cd /home/runner/work/CrossMix-OS/CrossMix-OS
+          echo "$BUILD_VERSION" > System/usr/trimui/crossmix-version.txt
           /usr/local/bin/7zz a RetroArch/default_config.7z RetroArch/retroarch.cfg RetroArch/.retroarch/config/*
       - name: Packaging release (7z; auto-split if over GitHub 2 GiB asset limit)
         run: |

@@ -82,7 +82,7 @@ get_release_info() {
 
     Release_asset=$(echo "$Release_assets_info" | jq '.assets[]? | select(.name | contains("CrossMix-OS_v"))')
     Release_url=$(echo $Release_asset | jq '.browser_download_url' | tr -d '"')
-    Release_FullVersion=$(echo $Release_asset | jq '.name' | tr -d "\"" | sed 's/^CrossMix-OS_v//g' | sed 's/\.zip$//g')
+    Release_FullVersion=$(echo $Release_asset | jq '.name' | tr -d "\"" | sed 's/^CrossMix-OS_v//g' | sed 's/\.zip$//g' | sed 's/\.7z$//g')
     Release_Version=$(echo $Release_FullVersion | sed 's/-dev.*$//g')
     Release_size=$(echo $Release_asset | jq -r '.size')
     Release_size_MB=$((Release_size / 1024 / 1024))
