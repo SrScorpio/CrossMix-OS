@@ -24,47 +24,49 @@ jobs:
           echo "BUILD_VERSION=${TAG#v}" >> $GITHUB_ENV
       - name: Install 7-Zip
         run: |
-          mkdir -p /home/runner/work/CrossMix-OS/tools
-          wget https://www.7-zip.org/a/7z2501-linux-x64.tar.xz -P /home/runner/work/CrossMix-OS/tools
-          tar xvf /home/runner/work/CrossMix-OS/tools/7z2501-linux-x64.tar.xz -C /home/runner/work/CrossMix-OS/tools
-          sudo cp /home/runner/work/CrossMix-OS/tools/7zz /usr/local/bin/
+          mkdir -p "$RUNNER_TEMP/tools"
+          wget https://www.7-zip.org/a/7z2501-linux-x64.tar.xz -P "$RUNNER_TEMP/tools"
+          tar xvf "$RUNNER_TEMP/tools/7z2501-linux-x64.tar.xz" -C "$RUNNER_TEMP/tools"
+          sudo cp "$RUNNER_TEMP/tools/7zz" /usr/local/bin/
       - name: Extract RetroArch cores
         run: |
-          find /home/runner/work/CrossMix-OS/CrossMix-OS/RetroArch/.retroarch/cores -name "*.7z" -execdir 7zz x {} \; -execdir rm {} \;
+          find "$GITHUB_WORKSPACE/RetroArch/.retroarch/cores" -name "*.7z" -execdir 7zz x {} \; -execdir rm {} \;
       - name: Cleaning image...
         run: |
-          find /home/runner/work/CrossMix-OS/CrossMix-OS -type f -name ".gitkeep" -delete
-          rm -rf /home/runner/work/CrossMix-OS/CrossMix-OS/_assets
-          rm /home/runner/work/CrossMix-OS/CrossMix-OS/LICENSE
-          rm /home/runner/work/CrossMix-OS/CrossMix-OS/README.md
-          ls -la /home/runner/work/CrossMix-OS/CrossMix-OS
-          rm -rf /home/runner/work/CrossMix-OS/CrossMix-OS/.git
-          rm -rf /home/runner/work/CrossMix-OS/CrossMix-OS/.github
-          ls -la /home/runner/work/CrossMix-OS/CrossMix-OS
-          cd /home/runner/work/CrossMix-OS/CrossMix-OS
+          cd "$GITHUB_WORKSPACE"
+          find . -type f -name ".gitkeep" -delete
+          rm -rf _assets
+          rm LICENSE
+          rm README.md
+          ls -la
+          rm -rf .git
+          rm -rf .github
+          ls -la
+          # Version stamp: image must always carry its own version key
           echo "$BUILD_VERSION" > System/usr/trimui/crossmix-version.txt
           /usr/local/bin/7zz a RetroArch/default_config.7z RetroArch/retroarch.cfg RetroArch/.retroarch/config/*
       - name: Packaging release (7z; auto-split if over GitHub 2 GiB asset limit)
         run: |
           shopt -s dotglob
-          cd /home/runner/work/CrossMix-OS/CrossMix-OS
-          7zz a -mx=7 "/home/runner/work/CrossMix-OS/CrossMix-OS_v${{ env.BUILD_VERSION }}.7z" ./*
+          OUT="$(dirname "$GITHUB_WORKSPACE")/CrossMix-OS_v${BUILD_VERSION}.7z"
+          cd "$GITHUB_WORKSPACE"
+          7zz a -mx=7 "$OUT" ./*
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd /home/runner/work/CrossMix-OS
-          ASSET="CrossMix-OS_v${{ env.BUILD_VERSION }}.7z"
+          cd "$(dirname "$GITHUB_WORKSPACE")"
+          ASSET="CrossMix-OS_v${BUILD_VERSION}.7z"
           SIZE=$(stat -c%s "$ASSET" 2>/dev/null || echo 0)
           if [ "$SIZE" -ge 2000000000 ]; then
             echo "Single archive is $SIZE bytes; rebuilding as 1900 MB split volumes (GitHub 2 GiB asset limit)."
             rm -f "$ASSET"*
-            ( shopt -s dotglob; cd CrossMix-OS && 7zz a -mx=7 -v1900m "../$ASSET" ./* )
+            ( shopt -s dotglob; cd "$GITHUB_WORKSPACE" && 7zz a -mx=7 -v1900m "../$ASSET" ./* )
           fi
-          # Drop any draft left over from a previous failed run on this tag
+          # Recreate the release for this tag (drops stale drafts/assets on rebuild)
           gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
             && gh release delete "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --yes || true
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-            --title "CrossMix-OS CE v${{ env.BUILD_VERSION }}" \
-            --notes "Community Edition baseline. Original work by cizia64 and contributors (GPL-3.0). If the download comes in parts (.7z.001, .7z.002, ...), download all of them into the same folder and extract with: 7z x CrossMix-OS_v${{ env.BUILD_VERSION }}.7z.001" \
-            --draft CrossMix-OS_v${{ env.BUILD_VERSION }}.7z*
+            --title "CrossMix-OS SE v${BUILD_VERSION}" \
+            --notes "Scorpio Edition. Based on CrossMix-OS by cizia64 and contributors (GPL-3.0). Fresh installs: download the image and extract to the SD root. Existing installs: updates arrive as small hotfixes via Check Update; the full image is only needed for a clean install." \
+            --draft "$ASSET"*
