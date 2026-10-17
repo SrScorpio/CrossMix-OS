@@ -106,10 +106,17 @@ get_release_info() {
         " URL:     $Release_url \n" \
         "${BLUE}==================================${NC}\n\n\n\n\n"
 
-    Local_Version=$(get_version $Local_Version)
-    Remote_Version=$(get_version $Release_Version)
+    # GH#29: canonical comparison; update only if remote strictly newer than
+    # local (no downgrade, no equal re-flag). Invalid -> explicit no-update.
+    vcmp=$(cmp_crossmix_versions "$Local_CrossMixVersion" "$Release_FullVersion")
+    if [ -z "$vcmp" ]; then
+        echo -e "Invalid local or remote version ('$Local_CrossMixVersion' vs '$Release_FullVersion').\\n"
+        rm "$updatedir/.CrossMixUpdateAvailable" 2>/dev/null
+        sync
+        return 1
+    fi
 
-    if [ $Local_Version -gt $Remote_Version ] || ([ $Local_Version -eq $Remote_Version ] && [ "$Local_CrossMixVersion" = "$Release_FullVersion" ]); then
+    if [ "$vcmp" != "-1" ]; then
         echo -e "No new major version of CrossMix available.\n"
         rm "$updatedir/.CrossMixUpdateAvailable" 2>/dev/null
         sync
@@ -203,7 +210,5 @@ apply_update() {
         # killall -2 SimpleTerminal
     fi
 }
-
-get_version() { echo $@ | tr -d [:alpha:] | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
 
 main
