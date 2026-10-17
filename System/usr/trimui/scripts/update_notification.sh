@@ -42,14 +42,11 @@ can_reach_github() {
 
 write_result_json() {
     # $1: name, $2: url, $3: size_bytes, $4: created_at
-    cat >"$RELEASE_META" <<EOF
-{
-  "name": "$1",
-  "url": "$2",
-  "size": $3,
-  "created_at": "$4"
-}
-EOF
+    # Serialize with jq so available_release.json is ALWAYS valid JSON, even if a
+    # string field contains quotes/backslashes (contract: same keys, numeric size).
+    jq -n --arg name "$1" --arg url "$2" --argjson size "$3" --arg created "$4" \
+        '{name: $name, url: $url, size: $size, created_at: $created}' >"$RELEASE_META.tmp" 2>/dev/null \
+        && mv "$RELEASE_META.tmp" "$RELEASE_META"
 }
 
 # Check major release availability from GitHub releases
@@ -58,23 +55,52 @@ check_major_release() {
     if echo "$release_json" | grep -q '"message": "Not Found"'; then
         log "No GitHub releases found."
         rm -f "$RELEASE_META"
-        exit 1
+        return 1
     fi
 
-    asset=$(echo "$release_json" | jq '.assets[]? | select((.name | contains("CrossMix-OS_v")) and (.name | endswith(".zip")))')
-    if [ -z "$asset" ]; then
-        log "Github API Request has failed or latest release has no CrossMix-OS_v*.zip asset."
+    # The image must belong to THIS release tag: exactly CrossMix-OS_v<tag>.7z/.zip.
+    # Attachments (kit/firmware/tool/migration/...), other versions and split parts
+    # never match. Candidates also need a usable url and a positive integer size.
+    tag=$(echo "$release_json" | jq -r '.tag_name // ""' 2>/dev/null)
+    release_version=""
+    [ -n "$tag" ] && release_version="${tag#v}"
+    if [ -z "$release_version" ]; then
+        log "Release has no usable tag_name; skipping major release check."
         rm -f "$RELEASE_META"
-        exit 1
+        return 1
     fi
 
-    url=$(echo "$asset" | jq -r '.browser_download_url')
+    asset=$(echo "$release_json" | jq -r --arg ver "$release_version" '
+        [ .assets[]?
+          | select(.name != null and (.name | type) == "string")
+          | select(.name == ("CrossMix-OS_v" + $ver + ".7z")
+                   or .name == ("CrossMix-OS_v" + $ver + ".zip"))
+          | select((.browser_download_url // "") | (type == "string"
+              and test("^https?://([^/[:space:][:cntrl:]])([^[:space:][:cntrl:]]*)$")))
+          | select((.size // null) | type == "number")
+          | select(.size > 0 and .size == (.size | floor))
+          | select((.created_at // null) | type == "string")
+          | {name: .name, url: .browser_download_url, size: .size, created: .created_at,
+             prio: (if (.name | endswith(".7z")) then 0 else 1 end)} ]
+        | sort_by(.prio, .name)
+        | (if length > 0 then .[0] else null end)
+        | tostring' 2>/dev/null)
+    if [ -z "$asset" ] || [ "$asset" = "null" ]; then
+        if echo "$release_json" | jq -e '[.assets[]? | select((.name // "") | test("\\.7z\\.00[0-9]$"))] | length > 0' >/dev/null 2>&1; then
+            log "Release contains split multipart images (.7z.001); split archives are not supported by this updater."
+        fi
+        log "No valid CrossMix-OS_v image asset (.7z/.zip with usable url/size) for tag $tag."
+        rm -f "$RELEASE_META"
+        return 1
+    fi
+
+    url=$(echo "$asset" | jq -r '.url')
     name=$(echo "$asset" | jq -r '.name')
     size=$(echo "$asset" | jq -r '.size')
-    created=$(echo "$asset" | jq -r '.created_at')
+    created=$(echo "$asset" | jq -r '.created')
 
     release_full_version="${name#CrossMix-OS_v}"
-    release_full_version="${release_full_version%.zip}"
+    release_full_version="${release_full_version%.*}"
     remote_version_core="${release_full_version%-dev*}"
 
     local_full_version=$(cat /mnt/SDCARD/System/usr/trimui/crossmix-version.txt 2>/dev/null)
@@ -82,7 +108,7 @@ check_major_release() {
 
     if [ -z "$local_full_version" ]; then
         log "Local version missing; flagging update $release_full_version."
-        write_result_json "$name" "$url" "$size" "$created"
+        write_result_json "$name" "$url" "$size" "$created" || { rm -f "$RELEASE_META"; return 1; }
         sync
         return 0
     fi
@@ -92,7 +118,7 @@ check_major_release() {
 
     if [ "$local_v" -lt "$remote_v" ] || { [ "$local_v" -eq "$remote_v" ] && [ "$local_full_version" != "$release_full_version" ]; }; then
         rm -f "$HOTFIX_META"
-        write_result_json "$name" "$url" "$size" "$created"
+        write_result_json "$name" "$url" "$size" "$created" || { rm -f "$RELEASE_META"; return 1; }
         log "Update available: $local_full_version -> $release_full_version ($size bytes)."
         echo -e "{ \"type\":\"info\", \"size\":2, \"duration\":5000, \"x\":670, \"y\":640,  \"message\":\"       CrossMix v$release_full_version available.\",  \"icon\":\"\" }" >/tmp/trimui_osd/osd_toast_msg
 
