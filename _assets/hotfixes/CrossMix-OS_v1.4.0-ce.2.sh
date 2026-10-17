@@ -13,14 +13,14 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.9"
+Remote_HotfixVersion="1.4.0-ce.2.10"
 Remote_HotfixDate="2026-10-17"
-Remote_HotfixDesc="- Firmware Download + Firmware Update entries"
+Remote_HotfixDesc="- Firmware Download: live progress + stall detection"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
 
-version_num() { tr -cd '0-9'; }
+version_num() { sed 's/[^0-9.]/./g' | tr -s '.' | sed 's/^\.//; s/\.$//' | awk -F. '{printf "%03d%03d%03d%03d%03d", $1, $2, $3, $4, $5}'; }
 
 get_hotfix_info() {
     echo -e "\n${BLUE}========== Hotfix available ==========${NC}"
@@ -70,6 +70,7 @@ main() {
     chmod a+x "/mnt/SDCARD/Apps/SystemTools/launch.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/starts/_FirmwareCheck.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_ota_release.sh" 2>/dev/null
+    chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_notification.sh" 2>/dev/null
 
     # System Tools cachea el menu en SQLite y no lo reescanea: se borra para que
     # la entrada nueva aparezca al abrirlo (se reconstruye en ~2 s).

@@ -6,7 +6,9 @@
 # MinFwVersion.txt, stores them in trimui/firmwares/ and validates the archive,
 # so the update entry finds everything ready.
 #
-# UI: infoscreen.sh paints a single line (sdl2imgshow -t), hence short screens.
+# UI: infoscreen.sh paints a single line (sdl2imgshow -t), so the download runs
+# in the background while a loop repaints a live percentage every 2 seconds.
+# A frozen screen then means a frozen download - not a hidden one.
 
 export LD_LIBRARY_PATH="/mnt/SDCARD/System/lib:/usr/trimui/lib:$LD_LIBRARY_PATH"
 export PATH="/mnt/SDCARD/System/bin:/mnt/SDCARD/System/usr/trimui/scripts:$PATH"
@@ -20,13 +22,50 @@ SEVENZ="/mnt/SDCARD/System/bin/7zz"
 [ -x "$SEVENZ" ] || SEVENZ="7zz"
 DL_BASE="https://github.com/SrScorpio/CrossMix-OS-SE/releases/latest/download"
 
+# Tamaños esperados de los assets (bytes). Solo se usan para el porcentaje.
+SIZE_P1=102760448
+SIZE_P2=55340257
+
 LOG="/mnt/SDCARD/Apps/SystemTools/Logs/Firmware Download.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || LOG="/tmp/firmware_download.log"
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
 
 busy() { $INFO -m "$1" -fs 18 -t 900 & echo $!; }
-stop_busy() { kill "$1" 2>/dev/null; pkill -f sdl2imgshow 2>/dev/null; }
 size_mb() { echo $(( $(stat -c %s "$1" 2>/dev/null || echo 0) / 1048576 ))MB; }
+
+# Descarga con progreso: wget en background + repintado del porcentaje.
+# $1 url  $2 destino  $3 bytes esperados  $4 etiqueta
+download_part() {
+    url="$1"; dest="$2"; total="$3"; label="$4"
+    "$WGET" -q -T 30 -t 2 -O "$dest.part" "$url" &
+    dl_pid=$!
+    stall=0; last=0
+
+    while kill -0 "$dl_pid" 2>/dev/null; do
+        cur=$(stat -c %s "$dest.part" 2>/dev/null || echo 0)
+        mb=$((cur / 1048576))
+        [ "$total" -gt 0 ] && pct=$((cur * 100 / total)) || pct=0
+        [ "$pct" -gt 100 ] && pct=100
+        $INFO -m "$label $pct% - $mb of $((total / 1048576))MB" -fs 22 -t 2
+        if [ "$cur" -le "$last" ]; then
+            stall=$((stall + 1))
+        else
+            stall=0
+        fi
+        last=$cur
+        if [ "$stall" -ge 15 ]; then
+            log "stall detected at $mb MB, aborting"
+            kill "$dl_pid" 2>/dev/null
+            break
+        fi
+    done
+    wait "$dl_pid" 2>/dev/null
+    rc=$?
+    if [ "$rc" -eq 0 ] && [ -s "$dest.part" ]; then
+        mv -f "$dest.part" "$dest"
+    fi
+    return "$rc"
+}
 
 log "--- start"
 
@@ -42,7 +81,7 @@ mkdir -p "$FWDIR"
 
 P1="$FWDIR/firmware_tsp_v${req_ver}_${req_rev}.7z.001"
 P2="${P1%.001}.002"
-log "target=$req_ver/$req_rev p1=$P1 p2=$P2"
+log "target=$req_ver/$req_rev"
 
 $INFO -m "Firmware payload v$req_ver / $req_rev" -fs 18 -t 4
 
@@ -52,7 +91,7 @@ if [ -f "$P1" ] && [ -f "$P2" ]; then
     pid=$(busy "Checking the archive...")
     "$SEVENZ" t "$P1" >/tmp/fw_dl_verify.log 2>&1
     vrc=$?
-    stop_busy "$pid"
+    kill "$pid" 2>/dev/null; pkill -f sdl2imgshow 2>/dev/null
     log "already present, 7zz test rc=$vrc"
     if [ "$vrc" -eq 0 ]; then
         $INFO -m "Payload OK - nothing to download" -fs 18 -t 8
@@ -67,22 +106,28 @@ button=$($INFO -m "Download $req_ver payload? ~158MB  A: yes  B: no" -fs 14 -k "
 log "confirm button=$button"
 [ "$button" = "A" ] || { log "declined"; exit 0; }
 
-pid=$(busy "Downloading part 1 of 2 - do not power off")
-"$WGET" -q -O "$P1" "$DL_BASE/$(basename "$P1")"
+rm -f "$P1" "$P2" "${P1}.part" "${P2}.part"
+log "downloading part1"
+download_part "$DL_BASE/$(basename "$P1")" "$P1" "$SIZE_P1" "Part 1/2"
 rc1=$?
-stop_busy "$pid"
 log "p1 rc=$rc1 size=$(size_mb "$P1")"
 
-pid=$(busy "Downloading part 2 of 2 - do not power off")
-"$WGET" -q -O "$P2" "$DL_BASE/$(basename "$P2")"
+if [ "$rc1" -ne 0 ]; then
+    $INFO -m "Part 1 failed - check WiFi and retry" -fs 18 -t 12
+    rm -f "$P1" "${P1}.part" "$P2" "${P2}.part"
+    log "abort: part1 failed"
+    exit 1
+fi
+
+log "downloading part2"
+download_part "$DL_BASE/$(basename "$P2")" "$P2" "$SIZE_P2" "Part 2/2"
 rc2=$?
-stop_busy "$pid"
 log "p2 rc=$rc2 size=$(size_mb "$P2")"
 
-if [ "$rc1" -ne 0 ] || [ "$rc2" -ne 0 ]; then
-    $INFO -m "Download failed - check WiFi and retry" -fs 18 -t 10
-    rm -f "$P1" "$P2"
-    log "abort: download failed"
+if [ "$rc2" -ne 0 ]; then
+    $INFO -m "Part 2 failed - check WiFi and retry" -fs 18 -t 12
+    rm -f "$P1" "${P1}.part" "$P2" "${P2}.part"
+    log "abort: part2 failed"
     exit 1
 fi
 
@@ -90,10 +135,10 @@ fi
 pid=$(busy "Verifying the archive...")
 "$SEVENZ" t "$P1" >/tmp/fw_dl_verify.log 2>&1
 vrc=$?
-stop_busy "$pid"
+kill "$pid" 2>/dev/null; pkill -f sdl2imgshow 2>/dev/null
 log "7zz test rc=$vrc"
 if [ "$vrc" -ne 0 ]; then
-    $INFO -m "Archive corrupt - files deleted" -fs 18 -t 10
+    $INFO -m "Archive corrupt - files deleted" -fs 18 -t 12
     rm -f "$P1" "$P2"
     exit 1
 fi
