@@ -54,7 +54,7 @@ EOF
 
 # Check major release availability from GitHub releases
 check_major_release() {
-    release_json=$(curl -k -s "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest")
+    release_json=$(curl -k -s -L "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest")
     if echo "$release_json" | grep -q '"message": "Not Found"'; then
         log "No GitHub releases found."
         rm -f "$RELEASE_META"
