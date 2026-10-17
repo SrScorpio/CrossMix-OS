@@ -1,17 +1,19 @@
 #!/bin/sh
-# CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.1
+# CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.3
 # Channel: served by ota_update.sh when releases/latest has nothing newer.
 # Fixes:
 #  - crossmix-version.txt pinned to 1.4.0-ce.2 (legacy upstream hotfixes
 #    can no longer fire by version-key on migrated consoles)
 #  - update_ota_release.sh parses .7z release assets correctly
+#  - firmware wizard: MinFwVersion matches the bundled payload (1.1.1/20251128)
+#    and _FirmwareCheck.sh falls back to the newest bundled firmware
 # Non-interactive by design: the OTA flow runs it as `curl ... | sh`.
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.2"
+Remote_HotfixVersion="1.4.0-ce.2.3"
 Remote_HotfixDate="2026-10-17"
-Remote_HotfixDesc="- version-key fix + .7z asset parsing"
+Remote_HotfixDesc="- version-key fix + .7z parsing + firmware wizard target"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
