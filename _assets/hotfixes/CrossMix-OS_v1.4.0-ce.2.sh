@@ -13,9 +13,9 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.13"
+Remote_HotfixVersion="1.4.0-ce.2.14"
 Remote_HotfixDate="2026-10-17"
-Remote_HotfixDesc="- firmware payload downloaded by the updater itself"
+Remote_HotfixDesc="- firmware update back to the boot flow (menu entry removed)"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
@@ -65,13 +65,14 @@ main() {
     fi
 
     # los scripts deben quedar ejecutables aunque el zip no traiga los permisos
-    chmod a+x "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Update.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/Apps/SystemTools/launch.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/starts/_FirmwareCheck.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_ota_release.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_notification.sh" 2>/dev/null
 
-    # retiradas: entradas propias que ya no aportan (el flujo oficial basta)
+    # retiradas: el firmware se actualiza en el arranque (flujo oficial), no
+    # desde el menu; estas entradas propias sobran.
+    rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Update.sh"
     rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Download.sh"
     rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Debug.sh"
 
