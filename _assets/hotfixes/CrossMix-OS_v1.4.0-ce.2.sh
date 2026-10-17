@@ -13,9 +13,9 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.8"
+Remote_HotfixVersion="1.4.0-ce.2.9"
 Remote_HotfixDate="2026-10-17"
-Remote_HotfixDesc="- Firmware Update: payload download + verify"
+Remote_HotfixDesc="- Firmware Download + Firmware Update entries"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
@@ -66,6 +66,7 @@ main() {
 
     # los scripts deben quedar ejecutables aunque el zip no traiga los permisos
     chmod a+x "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Update.sh" 2>/dev/null
+    chmod a+x "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Download.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/Apps/SystemTools/launch.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/starts/_FirmwareCheck.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_ota_release.sh" 2>/dev/null

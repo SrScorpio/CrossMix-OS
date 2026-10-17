@@ -17,21 +17,10 @@ FWFILE="/mnt/SDCARD/trimui/firmwares/MinFwVersion.txt"
 FWDIR="/mnt/SDCARD/trimui/firmwares"
 CHECK="/mnt/SDCARD/System/starts/_FirmwareCheck.sh"
 INFO="infoscreen.sh"
-WGET="/mnt/SDCARD/System/bin/wget"
-SEVENZ="/mnt/SDCARD/System/bin/7zz"
-[ -x "$WGET" ] || WGET="wget"
-[ -x "$SEVENZ" ] || SEVENZ="7zz"
-DL_BASE="https://github.com/SrScorpio/CrossMix-OS-SE/releases/latest/download"
 
 LOG="/mnt/SDCARD/Apps/SystemTools/Logs/Firmware Update.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || LOG="/tmp/firmware_update.log"
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
-
-# Pantalla fija mientras corre un proceso largo en primer plano
-waiting_screen() {
-    $INFO -m "$1" -fs 18 -t 900 &
-    echo $!
-}
 
 log "--- start"
 
@@ -69,45 +58,11 @@ P1="$FWDIR/firmware_tsp_v${req_ver}_${req_rev}.7z.001"
 P2="${P1%.001}.002"
 payload=$(ls -1 "$FWDIR"/firmware_*_v*.7z.001 2>/dev/null | sort | tail -1)
 
-# --- payload ausente: descarga desde los assets del release ---
+# --- payload ausente: se descarga desde la entrada Firmware Download ---
 if [ -z "$payload" ]; then
-    log "payload missing, offering download"
-    button=$($INFO -m "Payload missing - download now? A: yes  B: no" -fs 16 -k "A B")
-    log "download prompt button=$button"
-    [ "$button" = "A" ] || { log "download declined"; exit 1; }
-
-    pid=$(waiting_screen "Downloading part 1 of 2 - please wait")
-    "$WGET" -q -O "$P1" "$DL_BASE/$(basename "$P1")"
-    rc1=$?
-    kill "$pid" 2>/dev/null; pkill -f sdl2imgshow 2>/dev/null
-    log "download p1 rc=$rc1 size=$(stat -c %s "$P1" 2>/dev/null)"
-
-    pid=$(waiting_screen "Downloading part 2 of 2 - please wait")
-    "$WGET" -q -O "$P2" "$DL_BASE/$(basename "$P2")"
-    rc2=$?
-    kill "$pid" 2>/dev/null; pkill -f sdl2imgshow 2>/dev/null
-    log "download p2 rc=$rc2 size=$(stat -c %s "$P2" 2>/dev/null)"
-
-    if [ "$rc1" -ne 0 ] || [ "$rc2" -ne 0 ]; then
-        $INFO -m "Download failed - check WiFi and retry" -fs 18 -t 10
-        rm -f "$P1" "$P2"
-        log "abort: download failed"
-        exit 1
-    fi
-
-    pid=$(waiting_screen "Verifying the firmware archive...")
-    "$SEVENZ" t "$P1" >/tmp/fw_verify.log 2>&1
-    vrc=$?
-    kill "$pid" 2>/dev/null; pkill -f sdl2imgshow 2>/dev/null
-    log "7zz test rc=$vrc"
-    if [ "$vrc" -ne 0 ]; then
-        $INFO -m "Firmware archive corrupt - files deleted" -fs 18 -t 10
-        rm -f "$P1" "$P2"
-        log "abort: archive test failed"
-        exit 1
-    fi
-    payload="$P1"
-    $INFO -m "Payload downloaded and verified" -fs 18 -t 4
+    $INFO -m "Payload missing - run Firmware Download first" -fs 15 -t 10
+    log "abort: payload missing (use Firmware Download)"
+    exit 1
 fi
 
 payload_ver=$(basename "$payload" | sed -n 's/^firmware_[a-z0-9]*_v\([0-9.]*\)_.*/\1/p')
