@@ -13,9 +13,9 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.12"
+Remote_HotfixVersion="1.4.0-ce.2.13"
 Remote_HotfixDate="2026-10-17"
-Remote_HotfixDesc="- firmware entries: verified UI + progress bar + debug"
+Remote_HotfixDesc="- firmware payload downloaded by the updater itself"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
@@ -66,16 +66,73 @@ main() {
 
     # los scripts deben quedar ejecutables aunque el zip no traiga los permisos
     chmod a+x "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Update.sh" 2>/dev/null
-    chmod a+x "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Download.sh" 2>/dev/null
-    chmod a+x "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Debug.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/Apps/SystemTools/launch.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/starts/_FirmwareCheck.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_ota_release.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_notification.sh" 2>/dev/null
 
+    # retiradas: entradas propias que ya no aportan (el flujo oficial basta)
+    rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Download.sh"
+    rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Debug.sh"
+
     # System Tools cachea el menu en SQLite y no lo reescanea: se borra para que
     # la entrada nueva aparezca al abrirlo (se reconstruye en ~2 s).
     rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/Menu_cache7.db"
+
+    # --- payload de firmware: lo baja el propio actualizador, sin interaccion ---
+    # 158 MB desde los assets del release; reintenta y verifica con 7zz.
+    fw_dir="/mnt/SDCARD/trimui/firmwares"
+    wget_bin="/mnt/SDCARD/System/bin/wget"; [ -x "$wget_bin" ] || wget_bin="wget"
+    sevenz_bin="/mnt/SDCARD/System/bin/7zz"; [ -x "$sevenz_bin" ] || sevenz_bin="7zz"
+    fw_ver=$(sed -n '1p' "$fw_dir/MinFwVersion.txt" 2>/dev/null | tr -d '\r ')
+    fw_rev=$(sed -n '2p' "$fw_dir/MinFwVersion.txt" 2>/dev/null | tr -d '\r ')
+    if [ -n "$fw_ver" ] && [ -n "$fw_rev" ]; then
+        p1="$fw_dir/firmware_tsp_v${fw_ver}_${fw_rev}.7z.001"
+        p2="${p1%.001}.002"
+        need=0
+        if [ -f "$p1" ] && [ -f "$p2" ]; then
+            "$sevenz_bin" t "$p1" >/dev/null 2>&1 || need=1
+        else
+            need=1
+        fi
+        if [ "$need" -eq 1 ]; then
+            echo -e "\nFirmware payload v$fw_ver ($fw_rev): downloading ~158 MB..."
+            for part in "$p1" "$p2"; do
+                name=$(basename "$part")
+                rm -f "$part"
+                ok=0
+                for attempt in 1 2 3; do
+                    if "$wget_bin" -q -T 30 \
+                        "https://github.com/$GITHUB_REPOSITORY/releases/latest/download/$name" -O "$part"; then
+                        ok=1
+                        break
+                    fi
+                    echo "  retry $attempt for $name"
+                    sleep 3
+                done
+                if [ "$ok" -eq 0 ]; then
+                    echo -e "  ${RED}FAILED${NC} $name"
+                else
+                    echo "  $name  $(( $(stat -c %s "$part") / 1048576 )) MB"
+                fi
+            done
+            if "$sevenz_bin" t "$p1" >/tmp/fw_payload_test.log 2>&1; then
+                echo -e "  ${GREEN}payload verified${NC}"
+            else
+                rm -f "$p1" "$p2"
+                fail_payload=1
+                echo -e "  ${RED}payload could not be verified${NC}"
+            fi
+        else
+            echo -e "Firmware payload v$fw_ver ($fw_rev): already present and valid."
+        fi
+    fi
+
+    if [ "${fail_payload:-0}" -eq 1 ]; then
+        echo -e "\n${RED}Payload pending.${NC} Scripts are applied; run Check Update again to retry the download."
+        sync
+        exit 1
+    fi
 
     echo "$Remote_HotfixVersion" > "$local_hotfix_file"
     rm -f /tmp/crossmix_hotfix.zip
