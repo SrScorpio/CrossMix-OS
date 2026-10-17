@@ -1,30 +1,22 @@
 #!/bin/sh
 # CrossMix-OS SE - download the firmware payload into the SD card.
 #
-# Separate from "Firmware Update" on purpose: downloading 158 MB is one job,
-# flashing is another. This entry fetches the two archive parts that match
-# MinFwVersion.txt, verifies them and leaves them in trimui/firmwares/.
-#
-# UI: infoscreen2.sh (presenter) with the Scorpio Edition background, same
-# screen style as the rest of CrossMix: centred text, animated spinner and
-# labelled buttons. The progress loop repaints every 4 s, so the spinner keeps
-# moving and the percentage stays honest - a still screen means a dead download.
+# UI: infoscreen.sh only. It is the primitive verified to paint on this device,
+# so the flow can never end in a black screen. One short line per screen, plus
+# a text progress bar during the download.
 
 export LD_LIBRARY_PATH="/mnt/SDCARD/System/lib:/usr/trimui/lib:$LD_LIBRARY_PATH"
 export PATH="/mnt/SDCARD/System/bin:/mnt/SDCARD/System/usr/trimui/scripts:$PATH"
 
 FWFILE="/mnt/SDCARD/trimui/firmwares/MinFwVersion.txt"
 FWDIR="/mnt/SDCARD/trimui/firmwares"
-I2="infoscreen2.sh"
-BG="/mnt/SDCARD/trimui/res/crossmix-os/se/bg-firmware.png"
-[ -f "$BG" ] || BG="bg-info.png"
+I1="infoscreen.sh"
 WGET="/mnt/SDCARD/System/bin/wget"
 SEVENZ="/mnt/SDCARD/System/bin/7zz"
 [ -x "$WGET" ] || WGET="wget"
 [ -x "$SEVENZ" ] || SEVENZ="7zz"
 DL_BASE="https://github.com/SrScorpio/CrossMix-OS-SE/releases/latest/download"
 
-# Tamaños de los assets del release (bytes), solo para el porcentaje
 SIZE_P1=102760448
 SIZE_P2=55340257
 
@@ -32,11 +24,21 @@ LOG="/mnt/SDCARD/Apps/SystemTools/Logs/Firmware Download.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || LOG="/tmp/firmware_download.log"
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
 
-say()  { $I2 -i "$BG" -m "$1" -fs 22 -fi 2 -p middle-center -fb -ts "${2:-6}"; }
-spin() { $I2 -i "$BG" -sp -m "$1" -fs 20 -fi 2 -p middle-center -fb -ts "${2:-4}"; }
-back() { $I2 -i "$BG" -m "$1" -fs 20 -fi 2 -p middle-center -fb -k rout B "${2:-Back}"; }
+show() { log "$1"; $I1 -m "$1" -fs "${2:-18}" -t "${3:-4}"; }
 
-# Descarga con progreso visible. $1 url  $2 destino  $3 bytes  $4 titulo
+# barra de 20 bloques a partir del porcentaje
+bar() {
+    n=$(( $1 / 5 ))
+    [ "$n" -gt 20 ] && n=20
+    s=""; i=1
+    while [ "$i" -le 20 ]; do
+        if [ "$i" -le "$n" ]; then s="${s}#"; else s="${s}-"; fi
+        i=$((i + 1))
+    done
+    echo "$s"
+}
+
+# Descarga con progreso. $1 url  $2 destino  $3 bytes  $4 "Part x/y"
 dl_part() {
     url="$1"; dest="$2"; total="$3"; title="$4"
     "$WGET" -q -T 30 -t 2 -O "$dest.part" "$url" &
@@ -49,14 +51,14 @@ dl_part() {
         total_mb=$((total / 1048576))
         [ "$total" -gt 0 ] && pct=$((cur * 100 / total)) || pct=0
         [ "$pct" -gt 100 ] && pct=100
-        spin "$title\n\n$pct%\n\n$mb of $total_mb MB" 4
+        $I1 -m "$title $pct% [$(bar "$pct")] $mb/$total_mb" -fs 16 -t 2
         if [ "$cur" -le "$last" ]; then
             stall=$((stall + 1))
         else
             stall=0
         fi
         last=$cur
-        if [ "$stall" -ge 8 ]; then
+        if [ "$stall" -ge 30 ]; then
             log "stall at $mb MB, aborting"
             kill "$dl_pid" 2>/dev/null
             break
@@ -71,8 +73,15 @@ dl_part() {
 
 log "--- start"
 
+# infoscreen2 sale en silencio si quedo el flag de "modo silencioso" de una
+# actualizacion interrumpida; se limpia antes de pintar nada.
+if [ -f /tmp/infoscreen_disabled ]; then
+    log "clearing stale /tmp/infoscreen_disabled"
+    rm -f /tmp/infoscreen_disabled
+fi
+
 if [ ! -f "$FWFILE" ]; then
-    back "Firmware download\n\nMissing file:\ntrimui/firmwares/MinFwVersion.txt"
+    show "Missing trimui/firmwares/MinFwVersion.txt" 16 8
     log "abort: MinFwVersion.txt missing"
     exit 1
 fi
@@ -85,77 +94,65 @@ P1="$FWDIR/firmware_tsp_v${req_ver}_${req_rev}.7z.001"
 P2="${P1%.001}.002"
 log "target=$req_ver/$req_rev"
 
-# --- ya presente y valido? ---
+show "Firmware payload v$req_ver / $req_rev" 18 3
+
 if [ -f "$P1" ] && [ -f "$P2" ]; then
-    "$SEVENZ" t "$P1" >/tmp/fw_dl_verify.log 2>&1 &
-    vpid=$!
-    while kill -0 "$vpid" 2>/dev/null; do
-        spin "Firmware payload\n\nAlready on the SD card\n\nVerifying..." 4
-    done
-    wait "$vpid" 2>/dev/null
+    show "Already on SD - verifying..." 16 3
+    "$SEVENZ" t "$P1" >/tmp/fw_dl_verify.log 2>&1
     vrc=$?
-    log "already present, 7zz test rc=$vrc"
+    log "already present, 7zz rc=$vrc"
     if [ "$vrc" -eq 0 ]; then
-        say "Firmware payload\n\nv$req_ver   ($req_rev)\n\nAlready on the SD card\nand verified.\n\nNothing to download." 8
+        show "Payload OK - nothing to download" 18 8
         exit 0
     fi
-    say "Firmware payload\n\nThe files on the SD are corrupt.\nDownloading them again." 6
+    show "Payload corrupt - downloading again" 16 4
     rm -f "$P1" "$P2"
 fi
 
-# --- confirmacion ---
-$I2 -i "$BG" -m "Firmware payload\n\nVersion      $req_ver   ($req_rev)\nSize         ~158 MB\nDestination  trimui/firmwares\n\nDownload now?" \
-    -fs 20 -fi 2 -p middle-center -fb \
-    -k rout A "Download" -k rin B "Cancel"
-rc=$?
-log "confirm rc=$rc"
-[ "$rc" -eq 14 ] || { log "declined"; exit 0; }
+button=$($I1 -m "Download v$req_ver (~158 MB)?  A: yes  B: no" -fs 16 -k "A B")
+log "confirm=$button"
+[ "$button" = "A" ] || { log "declined"; exit 0; }
 
 rm -f "$P1" "$P2" "${P1}.part" "${P2}.part"
 
 log "downloading part1"
-dl_part "$DL_BASE/$(basename "$P1")" "$P1" "$SIZE_P1" "Part 1 of 2\n\nDownloading firmware"
+dl_part "$DL_BASE/$(basename "$P1")" "$P1" "$SIZE_P1" "Part 1/2"
 rc1=$?
 log "p1 rc=$rc1"
 
 if [ "$rc1" -ne 0 ]; then
     rm -f "$P1" "${P1}.part" "$P2" "${P2}.part"
-    back "Firmware download\n\nPart 1 failed.\n\nCheck the WiFi connection and try again."
+    show "Part 1 failed - check WiFi, retry" 16 10
     log "abort: part1 failed"
     exit 1
 fi
 
 log "downloading part2"
-dl_part "$DL_BASE/$(basename "$P2")" "$P2" "$SIZE_P2" "Part 2 of 2\n\nDownloading firmware"
+dl_part "$DL_BASE/$(basename "$P2")" "$P2" "$SIZE_P2" "Part 2/2"
 rc2=$?
 log "p2 rc=$rc2"
 
 if [ "$rc2" -ne 0 ]; then
     rm -f "$P1" "${P1}.part" "$P2" "${P2}.part"
-    back "Firmware download\n\nPart 2 failed.\n\nCheck the WiFi connection and try again."
+    show "Part 2 failed - check WiFi, retry" 16 10
     log "abort: part2 failed"
     exit 1
 fi
 
-# --- verificar ---
-"$SEVENZ" t "$P1" >/tmp/fw_dl_verify.log 2>&1 &
-vpid=$!
-while kill -0 "$vpid" 2>/dev/null; do
-    spin "Verifying the firmware archive...\n\nPlease wait" 4
-done
-wait "$vpid" 2>/dev/null
+show "Verifying archive..." 16 3
+"$SEVENZ" t "$P1" >/tmp/fw_dl_verify.log 2>&1
 vrc=$?
-log "7zz test rc=$vrc"
+log "7zz rc=$vrc"
 
 if [ "$vrc" -ne 0 ]; then
     rm -f "$P1" "$P2"
-    back "Firmware download\n\nThe archive is corrupt.\nThe files were deleted."
+    show "Archive corrupt - files deleted" 16 10
     exit 1
 fi
 
 mb1=$(( $(stat -c %s "$P1") / 1048576 ))
 mb2=$(( $(stat -c %s "$P2") / 1048576 ))
-say "Firmware payload\n\nv$req_ver   ($req_rev)\n\nPart 1   $mb1 MB\nPart 2   $mb2 MB\nVerified OK" 6
-$I2 -i "$BG" -m "Ready\n\nNext step:\nTOOLS / Firmware Update" -fs 22 -fi 2 -p middle-center -fb -ts 8
+show "Done: ${mb1} MB + ${mb2} MB verified" 16 6
+show "Next: TOOLS / Firmware Update" 18 8
 log "done"
 exit 0

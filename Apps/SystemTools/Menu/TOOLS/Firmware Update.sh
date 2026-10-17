@@ -5,9 +5,8 @@
 # automatically at boot: upstream has no menu item, so it is undiscoverable.
 # This wrapper shows the real state and hands over to the official flow.
 #
-# UI: infoscreen2.sh (presenter) with the Scorpio Edition background - themed
-# screen, centred text, labelled buttons. infoscreen.sh is NOT used: it paints
-# a single line through sdl2imgshow.
+# UI: infoscreen.sh only, one short line per screen. It is the primitive
+# verified to paint on this device, so no entry can end in a black screen.
 
 export LD_LIBRARY_PATH="/mnt/SDCARD/System/lib:/usr/trimui/lib:$LD_LIBRARY_PATH"
 export PATH="/mnt/SDCARD/System/bin:/mnt/SDCARD/System/usr/trimui/scripts:$PATH"
@@ -15,22 +14,22 @@ export PATH="/mnt/SDCARD/System/bin:/mnt/SDCARD/System/usr/trimui/scripts:$PATH"
 FWFILE="/mnt/SDCARD/trimui/firmwares/MinFwVersion.txt"
 FWDIR="/mnt/SDCARD/trimui/firmwares"
 CHECK="/mnt/SDCARD/System/starts/_FirmwareCheck.sh"
-I2="infoscreen2.sh"
-BG="/mnt/SDCARD/trimui/res/crossmix-os/se/bg-firmware.png"
-[ -f "$BG" ] || BG="bg-info.png"
+I1="infoscreen.sh"
 
 LOG="/mnt/SDCARD/Apps/SystemTools/Logs/Firmware Update.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || LOG="/tmp/firmware_update.log"
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
-
-say()  { $I2 -i "$BG" -m "$1" -fs 22 -fi 2 -p middle-center -fb -ts "${2:-6}"; }
-ask()  { $I2 -i "$BG" -m "$1" -fs 20 -fi 2 -p middle-center -fb -k rout A "$2" -k rin B "$3"; }
-back() { $I2 -i "$BG" -m "$1" -fs 20 -fi 2 -p middle-center -fb -k rout B "${2:-Back}"; }
+show() { log "$1"; $I1 -m "$1" -fs "${2:-18}" -t "${3:-4}"; }
 
 log "--- start"
 
+if [ -f /tmp/infoscreen_disabled ]; then
+    log "clearing stale /tmp/infoscreen_disabled"
+    rm -f /tmp/infoscreen_disabled
+fi
+
 if [ ! -f "$FWFILE" ]; then
-    back "Firmware update\n\nMissing file:\ntrimui/firmwares/MinFwVersion.txt\n\nApply the latest hotfix first."
+    show "Missing trimui/firmwares/MinFwVersion.txt" 16 8
     log "abort: MinFwVersion.txt missing"
     exit 1
 fi
@@ -43,37 +42,37 @@ log "current=$cur_ver/$cur_rev required=$req_ver/$req_rev"
 
 case "$cur_rev" in
     ''|*[!0-9]*)
-        back "Firmware update\n\nCannot read the installed revision."
+        show "Cannot read firmware revision" 16 8
         log "abort: unreadable revision"
         exit 1
         ;;
 esac
 
-P1="$FWDIR/firmware_tsp_v${req_ver}_${req_rev}.7z.001"
+show "Installed: $cur_ver / $cur_rev" 18 3
+
+if [ "$cur_rev" -ge "$req_rev" ]; then
+    show "Required $req_ver / $req_rev: up to date" 16 8
+    log "up to date, exit"
+    exit 0
+fi
+
+show "Required: $req_ver / $req_rev" 18 3
+
 payload=$(ls -1 "$FWDIR"/firmware_*_v*.7z.001 2>/dev/null | sort | tail -1)
 
-# --- payload ausente: indicar la entrada de descarga ---
 if [ -z "$payload" ]; then
-    back "Firmware update\n\nInstalled    $cur_ver   ($cur_rev)\nRequired     $req_ver   ($req_rev)\nPayload      not on SD card\n\nRun  TOOLS / Firmware Download  first."
+    show "Payload missing: run Firmware Download" 15 8
     log "abort: payload missing (use Firmware Download)"
     exit 1
 fi
 
 payload_ver=$(basename "$payload" | sed -n 's/^firmware_[a-z0-9]*_v\([0-9.]*\)_.*/\1/p')
+show "Payload ready: v$payload_ver" 18 3
 
-# --- al dia? ---
-if [ "$cur_rev" -ge "$req_rev" ]; then
-    say "Firmware update\n\nInstalled    $cur_ver   ($cur_rev)\nRequired     $req_ver   ($req_rev)\n\nAlready up to date." 8
-    log "up to date, exit"
-    exit 0
-fi
+button=$($I1 -m "Run firmware update?  A: yes  B: no" -fs 18 -k "A B")
+log "button=$button"
 
-# --- confirmacion ---
-ask "Firmware update\n\nInstalled    $cur_ver   ($cur_rev)\nRequired     $req_ver   ($req_rev)\nPayload      v$payload_ver  on SD\n\nBack up the SD card before continuing." "Update" "Cancel"
-rc=$?
-log "confirm rc=$rc"
-
-if [ "$rc" -eq 14 ]; then
+if [ "$button" = "A" ]; then
     log "handing over to _FirmwareCheck.sh"
     exec "$CHECK"
 fi
