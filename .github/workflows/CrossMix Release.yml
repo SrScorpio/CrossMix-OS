@@ -22,12 +22,27 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           echo "BUILD_VERSION=${TAG#v}" >> $GITHUB_ENV
+          echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          # Physical git size of the tagged tree, for the manifest's separate byte accounting.
+          GIT_BYTES=$(git ls-tree -r -l HEAD | awk '{s+=$4} END {printf "%.0f", s}')
+          echo "GIT_OBJECT_BYTES=${GIT_BYTES}" >> $GITHUB_ENV
+          # The workflow file is deleted by the cleaning step, so its hash is captured here.
+          WF_SHA=$(sha256sum '.github/workflows/CrossMix Release.yml' | cut -d' ' -f1)
+          echo "WORKFLOW_SHA256=${WF_SHA}" >> $GITHUB_ENV
       - name: Install 7-Zip
         run: |
           mkdir -p "$RUNNER_TEMP/tools"
           wget https://www.7-zip.org/a/7z2501-linux-x64.tar.xz -P "$RUNNER_TEMP/tools"
           tar xvf "$RUNNER_TEMP/tools/7z2501-linux-x64.tar.xz" -C "$RUNNER_TEMP/tools"
           sudo cp "$RUNNER_TEMP/tools/7zz" /usr/local/bin/
+      - name: Record pre-transform inputs
+        run: |
+          # The generator uses 7zz above (if present) to count archive members; it never extracts.
+          mkdir -p "$RUNNER_TEMP/manifests"
+          cp .github/scripts/release-manifest.sh "$RUNNER_TEMP/manifests/release-manifest.sh"
+          sh "$RUNNER_TEMP/manifests/release-manifest.sh" \
+            --tree "$GITHUB_WORKSPACE" \
+            --record-inputs "$RUNNER_TEMP/manifests/inputs.tsv"
       - name: Extract RetroArch cores
         run: |
           find "$GITHUB_WORKSPACE/RetroArch/.retroarch/cores" -name "*.7z" -execdir 7zz x {} \; -execdir rm {} \;
@@ -42,6 +57,28 @@ jobs:
             exit 1
           fi
           echo "Firmware payload OK: $F"
+      - name: Generate hotfix surface manifest
+        run: |
+          # Hotfix payloads live under _assets, which the cleaning step deletes: record them now.
+          # A hotfix is its own surface; it is not an image and must not be reported as one.
+          if [ -d _assets/hotfixes ]; then
+            sh "$RUNNER_TEMP/manifests/release-manifest.sh" \
+              --tree "$GITHUB_WORKSPACE" \
+              --version "$BUILD_VERSION" \
+              --tag "$GITHUB_REF_NAME" \
+              --surface hotfix \
+              --include _assets/hotfixes \
+              --commit "$GIT_COMMIT" \
+              --repository "$GITHUB_REPOSITORY" \
+              --workflow ".github/workflows/CrossMix Release.yml" \
+              --workflow-sha256 "$WORKFLOW_SHA256" \
+              --ref "$GITHUB_REF" \
+              --run-id "$GITHUB_RUN_ID" \
+              --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+              --output "$RUNNER_TEMP/manifests/CrossMix-OS_v${BUILD_VERSION}.hotfix-manifest.json"
+          else
+            echo "::warning::no _assets/hotfixes directory: hotfix manifest not generated"
+          fi
       - name: Cleaning image...
         run: |
           cd "$GITHUB_WORKSPACE"
@@ -81,3 +118,47 @@ jobs:
             --title "CrossMix-OS SE v${BUILD_VERSION}" \
             --notes "Scorpio Edition. Based on CrossMix-OS by cizia64 and contributors (GPL-3.0). Fresh installs: download the image and extract to the SD root. Existing installs: updates arrive as small hotfixes via Check Update; the full image is only needed for a clean install." \
             --draft "$ASSET"*
+      - name: Publish release manifest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The manifest is generated after the archive exists so it hashes what was actually
+          # built (including split volumes), then attached next to it. Archive names are untouched.
+          MANIFEST="$RUNNER_TEMP/manifests/CrossMix-OS_v${BUILD_VERSION}.manifest.json"
+          cd "$(dirname "$GITHUB_WORKSPACE")"
+          ARGS=()
+          for f in "CrossMix-OS_v${BUILD_VERSION}.7z"*; do
+            [ -f "$f" ] || continue
+            ARGS+=(--artifact "$(pwd)/$f")
+          done
+          if [ "${#ARGS[@]}" -eq 0 ]; then
+            echo "::error::no CrossMix-OS_v${BUILD_VERSION}.7z* archive found next to the workspace"
+            exit 1
+          fi
+          GB=()
+          if [ -n "${GIT_OBJECT_BYTES:-}" ]; then GB=(--git-object-bytes "$GIT_OBJECT_BYTES"); fi
+          sh "$RUNNER_TEMP/manifests/release-manifest.sh" \
+            --tree "$GITHUB_WORKSPACE" \
+            --version "$BUILD_VERSION" \
+            --tag "$GITHUB_REF_NAME" \
+            --commit "$GIT_COMMIT" \
+            --surface image \
+            --repository "$GITHUB_REPOSITORY" \
+            --workflow ".github/workflows/CrossMix Release.yml" \
+            --workflow-sha256 "$WORKFLOW_SHA256" \
+            --ref "$GITHUB_REF" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            "${GB[@]}" \
+            --inputs "$RUNNER_TEMP/manifests/inputs.tsv" \
+            "${ARGS[@]}" \
+            --output "$MANIFEST"
+          jq -e . "$MANIFEST" >/dev/null
+          gh release upload "$GITHUB_REF_NAME" "$MANIFEST" --clobber
+      - name: Upload manifest artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-manifest-v${{ env.BUILD_VERSION }}
+          path: ${{ runner.temp }}/manifests/*.json
+          if-no-files-found: warn
