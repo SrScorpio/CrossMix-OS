@@ -1,5 +1,5 @@
 #!/bin/sh
-# CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.6
+# CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.16
 # Channel: served by ota_update.sh when releases/latest has nothing newer.
 # Fixes:
 #  - crossmix-version.txt pinned to 1.4.0-ce.2 (legacy upstream hotfixes
@@ -7,15 +7,18 @@
 #  - update_ota_release.sh parses .7z release assets correctly
 #  - firmware wizard: MinFwVersion matches the bundled payload (1.1.1/20251128)
 #    and _FirmwareCheck.sh falls back to the newest bundled firmware
-#  - new System Tools entry: TOOLS / Firmware Update (status + on-demand run)
+#  - deploys System/starts/_FirmwareCheck.sh + trimui/firmwares/MinFwVersion.txt
+#    (hotfix .14/.15 never shipped them; existing SDs still had the base script)
+#  - System Tools entry: TOOLS / Firmware Update (download/check + manual flash
+#    instructions; does not claim boot auto-flashes)
 #  - System Tools rebuilds its menu cache when scripts change (entry visible)
 # Non-interactive by design: the OTA flow runs it as `curl ... | sh`.
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.15"
-Remote_HotfixDate="2026-10-17"
-Remote_HotfixDesc="- OTA notifier now selects the exact tag image (.7z/.zip), excludes attachments/split and returns to hotfix flow instead of killing the shell (#28)"
+Remote_HotfixVersion="1.4.0-ce.2.16"
+Remote_HotfixDate="2026-10-18"
+Remote_HotfixDesc="- Deploy _FirmwareCheck.sh + MinFwVersion.txt to existing SDs; restore TOOLS/Firmware Update (download/check + VOL-+POWER manual flash; no auto-flash claim) (#5)"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
@@ -64,24 +67,24 @@ main() {
         exit 1
     fi
 
-    # los scripts deben quedar ejecutables aunque el zip no traiga los permisos
+    # scripts must stay executable even if the zip stripped bits
     chmod a+x "/mnt/SDCARD/Apps/SystemTools/launch.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/starts/_FirmwareCheck.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_ota_release.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_notification.sh" 2>/dev/null
+    chmod a+x "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Update.sh" 2>/dev/null
 
-    # retiradas: el firmware se actualiza en el arranque (flujo oficial), no
-    # desde el menu; estas entradas propias sobran.
-    rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Update.sh"
+    # retire obsolete debug/download-only entries; keep Firmware Update.sh
     rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Download.sh"
     rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Debug.sh"
 
-    # System Tools cachea el menu en SQLite y no lo reescanea: se borra para que
-    # la entrada nueva aparezca al abrirlo (se reconstruye en ~2 s).
+    # System Tools caches the menu in SQLite and does not rescan: drop it so
+    # the restored entry appears on next open (rebuild takes ~2 s).
     rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/Menu_cache7.db"
+    rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/.cache_stamp"
 
-    # --- payload de firmware: lo baja el propio actualizador, sin interaccion ---
-    # 158 MB desde los assets del release; reintenta y verifica con 7zz.
+    # --- firmware payload: updater downloads it, no interaction ---
+    # ~158 MB from release assets; retries and verifies with 7zz.
     fw_dir="/mnt/SDCARD/trimui/firmwares"
     wget_bin="/mnt/SDCARD/System/bin/wget"; [ -x "$wget_bin" ] || wget_bin="wget"
     sevenz_bin="/mnt/SDCARD/System/bin/7zz"; [ -x "$sevenz_bin" ] || sevenz_bin="7zz"
