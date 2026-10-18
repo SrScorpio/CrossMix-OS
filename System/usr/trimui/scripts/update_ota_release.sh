@@ -96,11 +96,36 @@ get_release_info() {
         return "$OTA_EXIT_NO_RELEASE"
     fi
 
-    Release_asset=$(echo "$Release_assets_info" | jq '.assets[]? | select(.name | contains("CrossMix-OS_v"))')
-    Release_url=$(echo $Release_asset | jq '.browser_download_url' | tr -d '"')
-    Release_FullVersion=$(echo $Release_asset | jq '.name' | tr -d "\"" | sed 's/^CrossMix-OS_v//g' | sed 's/\.zip$//g' | sed 's/\.7z$//g')
-    Release_Version=$(echo $Release_FullVersion | sed 's/-dev.*$//g')
-    Release_size=$(echo $Release_asset | jq -r '.size')
+    # An anchored match, not a substring one: release assets now include
+    # CrossMix-OS_v<ver>.manifest.json and .hotfix-manifest.json, which also
+    # contain "CrossMix-OS_v". A substring match returned 3 candidates, the
+    # version became multi-line and cmp_crossmix_versions rejected it, so
+    # Check Update failed closed on a perfectly good release.
+    Release_asset=$(echo "$Release_assets_info" | jq -c '
+        [ .assets[]?
+          | select((.name // "") | test("^CrossMix-OS_v[0-9A-Za-z][0-9A-Za-z._-]*\\.(7z|zip)$"))
+          | select((.size // 0) > 0 and .size == (.size | floor))
+          | select((.browser_download_url // "") | test("^https?://[^[:space:]]+$")) ]
+        | sort_by(if (.name | endswith(".7z")) then 0 else 1 end)
+        | .[0] // empty')
+    if [ -z "$Release_asset" ]; then
+        echo -e "${RED}FAIL${NC}\nRelease has no usable image asset (.7z/.zip); manifests and split volumes are not installable."
+        rm "$updatedir/.CrossMixUpdateAvailable" 2>/dev/null
+        sync
+        return "$OTA_EXIT_VERIFY"
+    fi
+    Release_url=$(echo "$Release_asset" | jq -r '.browser_download_url')
+    Release_FullVersion=$(echo "$Release_asset" | jq -r '.name' | sed 's/^CrossMix-OS_v//g' | sed 's/\.zip$//g' | sed 's/\.7z$//g')
+    case "$Release_FullVersion" in
+    '' | *[!0-9A-Za-z._-]*)
+        echo -e "${RED}FAIL${NC}\nRelease asset name does not yield a usable version: '$Release_FullVersion'"
+        rm "$updatedir/.CrossMixUpdateAvailable" 2>/dev/null
+        sync
+        return "$OTA_EXIT_VERIFY"
+        ;;
+    esac
+    Release_Version=$(echo "$Release_FullVersion" | sed 's/-dev.*$//g')
+    Release_size=$(echo "$Release_asset" | jq -r '.size')
 
     # A missing/!numeric size would make every later size check meaningless.
     case "$Release_size" in
