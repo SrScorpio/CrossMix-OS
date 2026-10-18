@@ -142,7 +142,7 @@ else
   # may not exist any more at this point: the console message above is the
   # fallback, never a silent exit.
   if command -v infoscreen.sh >/dev/null 2>&1; then
-    infoscreen.sh -m "CrossMix v$update_version installation FAILED (extraction). Update kept for a retry; reboot and install again." -k "A B START MENU" -fs 28
+    infoscreen.sh -m "CrossMix-OS SE v$update_version installation FAILED (extraction). Update kept for a retry; reboot and install again." -k "A B START MENU" -fs 28
   fi
   exit "$OTA_EXIT_APPLY"
 fi

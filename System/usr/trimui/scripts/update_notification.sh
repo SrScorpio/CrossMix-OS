@@ -123,7 +123,7 @@ check_major_release() {
         rm -f "$HOTFIX_META"
         write_result_json "$name" "$url" "$size" "$created" || { rm -f "$RELEASE_META"; return 1; }
         log "Update available: $local_full_version -> $release_full_version ($size bytes)."
-        echo -e "{ \"type\":\"info\", \"size\":2, \"duration\":5000, \"x\":670, \"y\":640,  \"message\":\"       CrossMix v$release_full_version available.\",  \"icon\":\"\" }" >/tmp/trimui_osd/osd_toast_msg
+        echo -e "{ \"type\":\"info\", \"size\":2, \"duration\":5000, \"x\":670, \"y\":640,  \"message\":\"    CrossMix-OS SE v$release_full_version available.\",  \"icon\":\"\" }" >/tmp/trimui_osd/osd_toast_msg
 
         sync
         return 0
@@ -222,7 +222,7 @@ main() {
     log "No major update. Checking hotfix for $local_version_core."
     if check_hotfix "$local_version_core"; then
         log "Hotfix $remote_hotfix available for base $local_version_core."
-        echo -e "{ \"type\":\"info\", \"size\":2, \"duration\":5000, \"x\":670, \"y\":640,  \"message\":\"CrossMix Hotfix $remote_hotfix available.\",  \"icon\":\"\" }" >/tmp/trimui_osd/osd_toast_msg
+        echo -e "{ \"type\":\"info\", \"size\":2, \"duration\":5000, \"x\":670, \"y\":640,  \"message\":\"CrossMix-OS SE Hotfix $remote_hotfix available.\",  \"icon\":\"\" }" >/tmp/trimui_osd/osd_toast_msg
         exit 0
     fi
 
