@@ -1,9 +1,49 @@
 #!/bin/sh
-UPDATE_VERSION=1.0.0
+# =============================================================================
+# CrossMix-OS SE - shared OTA helpers.
+#
+# OTA EXIT CODE CONTRACT (GH#29)
+# -----------------------------
+# The OTA chain is a tree of parents and children:
+#
+#   ota_update.sh
+#     +- ota_bootstrap.sh            (fetched, run with sh)
+#     +- update_ota_release.sh       (release download/verify/apply)
+#     |    +- shellect.sh            (interactive choice)
+#     |    +- crossmix_update.sh     (staged at boot by _FirmwareCheck.sh)
+#     |         +- crossmix_update.sh (re-exec of the copy inside the zip)
+#     +- CrossMix-OS_v<local>.sh     (hotfix, fetched, run with sh)
+#
+# Every script reports the outcome of ITS OWN work through its exit status.
+# A parent MUST check that status, MUST log it, and MUST NOT report success
+# (nor write an "applied" marker) when a child failed.
+#
+#    0  OTA_EXIT_OK          everything requested was done; if an update was
+#                            applied, every step of it succeeded.
+#    1  OTA_EXIT_ERROR       unspecified/unexpected failure.
+#    2  OTA_EXIT_DOWNLOAD    network, HTTP or file download failure.
+#    3  OTA_EXIT_VERIFY      downloaded artifact failed verification (size,
+#                            archive integrity) or version metadata invalid.
+#    4  OTA_EXIT_APPLY       applying failed (extraction, file moves,
+#                            backup/restore) - the system may be partial.
+#    5  OTA_EXIT_PRECOND     precondition not met (free space, missing files,
+#                            filesystem check).
+#   10  OTA_EXIT_NO_RELEASE  nothing to do: no newer release/hotfix (benign).
+#   11  OTA_EXIT_CANCEL      user declined (benign, nothing was changed).
+#
+# 10 and 11 are NOT failures, but they are NOT "update applied" either.
+# Any other value must be treated as a failure.
+#
+# SHELL NOTE: busybox ash (1.36) accepts `set -o pipefail`, but dash and other
+# POSIX shells do not, and the console only ships busybox. So this chain never
+# relies on pipefail: use ota_run_logged, which splits the pipeline and
+# recovers the child's real status.
+# =============================================================================
+UPDATE_VERSION=1.1.0
 export PATH="/mnt/SDCARD/System/bin:/mnt/SDCARD/System/usr/trimui/scripts:$PATH"
 export LD_LIBRARY_PATH="/mnt/SDCARD/System/lib:/usr/trimui/lib:$LD_LIBRARY_PATH"
 
-if [ "$1" == "-v" ]; then
+if [ "$1" = "-v" ]; then
     echo -n $UPDATE_VERSION
     exit
 fi
@@ -20,6 +60,67 @@ updatedir="/mnt/SDCARD/System/updates"
 Local_CrossMixVersion="$(cat "/mnt/SDCARD/System/usr/trimui/crossmix-version.txt")"
 current_date=$(date "+%Y-%m-%d")
 timestamp=$(date +'%Y%m%d-%Hh%M')
+
+# --- GH#29 exit codes (see contract at the top of this file) -----------------
+OTA_EXIT_OK=0
+OTA_EXIT_ERROR=1
+OTA_EXIT_DOWNLOAD=2
+OTA_EXIT_VERIFY=3
+OTA_EXIT_APPLY=4
+OTA_EXIT_PRECOND=5
+OTA_EXIT_NO_RELEASE=10
+OTA_EXIT_CANCEL=11
+
+# Machine-readable companion of the exit codes, kept for backwards
+# compatibility with the existing UI/reporting that reads this file.
+OTA_RESULT_FILE=/tmp/ota_release_result
+
+ota_rc_name() {
+    case "$1" in
+    0) echo "ok" ;;
+    1) echo "error" ;;
+    2) echo "download failed" ;;
+    3) echo "verification failed" ;;
+    4) echo "apply failed" ;;
+    5) echo "precondition failed" ;;
+    10) echo "no release" ;;
+    11) echo "user cancel" ;;
+    *) echo "unknown failure ($1)" ;;
+    esac
+}
+
+# ota_set_result <exit code> - record the outcome; the words "success",
+# "no release" and "user cancel" keep their historical spelling.
+ota_set_result() {
+    case "$1" in
+    0) _osr="success" ;;
+    10) _osr="no release" ;;
+    11) _osr="user cancel" ;;
+    *) _osr="$(ota_rc_name "$1")" ;;
+    esac
+    printf '%s\n' "$_osr" >"$OTA_RESULT_FILE"
+    sync 2>/dev/null
+}
+
+# ota_run_logged <logfile> <cmd> [args...]
+# Runs <cmd>, mirroring stdout+stderr to the console and appending it to
+# <logfile>, and returns <cmd>'s OWN exit status.
+# `cmd | tee log` returns tee's status instead, and pipefail is not portable.
+ota_run_logged() {
+    _orl_log="$1"
+    shift
+    [ $# -gt 0 ] || return "$OTA_EXIT_ERROR"
+    mkdir -p "$(dirname "$_orl_log")" 2>/dev/null
+    _orl_rc="/tmp/ota_rc.$$"
+    rm -f "$_orl_rc"
+    { "$@" 2>&1; echo $? >"$_orl_rc"; } | tee -a "$_orl_log"
+    _orl_status=$(cat "$_orl_rc" 2>/dev/null)
+    rm -f "$_orl_rc"
+    # No status file means the child never ran to completion: do not report
+    # success on a missing verdict.
+    [ -n "$_orl_status" ] || return "$OTA_EXIT_ERROR"
+    return "$_orl_status"
+}
 
 check_connection() {
     echo -n "Checking internet connection... "

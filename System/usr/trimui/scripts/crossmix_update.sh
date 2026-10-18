@@ -1,4 +1,11 @@
 #!/bin/sh
+# CrossMix-OS SE - boot installer for a staged update archive.
+#
+# GH#29: exit status follows the OTA exit code contract documented at the top of
+# update_common.sh. What matters here: the "installation completed" wording and
+# the reboot are reached ONLY when the archive was extracted and staged
+# correctly. A failed extraction restores the previous crossmix-version.txt (so
+# the console does not claim a version it does not run) and exits non-zero.
 
 UPDATE_FILE=$(find /mnt/SDCARD -maxdepth 1 -name "CrossMix-OS_v*.zip" -print -quit)
 
@@ -6,7 +13,16 @@ if [ ! -f /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh ]; then
   /mnt/SDCARD/System/bin/7zz e "$UPDATE_FILE" "System/usr/trimui/scripts/update_common.sh" -o/mnt/SDCARD/System/usr/trimui/scripts -y
 fi 
 
-source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
+. /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
+
+# Mirror of the contract: the SD copy of update_common.sh can be older than
+# this script (it is the archive that refreshes it).
+OTA_EXIT_OK=${OTA_EXIT_OK:-0}
+OTA_EXIT_ERROR=${OTA_EXIT_ERROR:-1}
+OTA_EXIT_DOWNLOAD=${OTA_EXIT_DOWNLOAD:-2}
+OTA_EXIT_VERIFY=${OTA_EXIT_VERIFY:-3}
+OTA_EXIT_APPLY=${OTA_EXIT_APPLY:-4}
+OTA_EXIT_PRECOND=${OTA_EXIT_PRECOND:-5}
 
 echo performance >/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 echo 1608000 >/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
@@ -25,12 +41,16 @@ if [ -n "$UPDATE_FILE" ]; then
   if [ "$script_dir" != "/tmp" ]; then
     /mnt/SDCARD/System/bin/7zz e "$UPDATE_FILE" "System/usr/trimui/scripts/crossmix_update.sh" -o/tmp -y
     chmod a+x "/tmp/crossmix_update.sh"
+    # GH#29: this re-exec installs the update - its status is the status of
+    # this run, never a blind exit 0.
     sh "/tmp/crossmix_update.sh"
-    exit
+    installer_rc=$?
+    echo "Inner installer (/tmp/crossmix_update.sh) exited $installer_rc"
+    exit "$installer_rc"
   fi
 else
   echo "No update file found"
-  exit
+  exit "$OTA_EXIT_PRECOND"
 fi
 
 
@@ -54,16 +74,21 @@ mkdir -p "$BCK_DIR"
 sync
 
 LOG_FILE="/mnt/SDCARD/_Updates/CrossMix_v${update_version}_${timestamp}.log"
-exec > >(tee -a "$LOG_FILE") 2>&1
+
+# GH#29: `exec > >(tee -a "$LOG_FILE") 2>&1` is a bashism. busybox ash happens to
+# accept it, dash does not, and a shell without process substitution silently
+# sends the whole log to a file named ">(tee ...)". The wrapper at the bottom of
+# this script tees main() to the log instead. Keep installing even if the log
+# cannot be created.
 
 # echo "==============  Updating CrossMix-OS v$Local_CrossMixVersion to v$update_version  =============="
 echo "${BLUE}======  Updating CrossMix-OS v$Local_CrossMixVersion to v$update_version  ======${NC}"
 
 check_available_space "5000"
-    if [ $? -eq 1 ]; then
+    if [ $? -ne 0 ]; then
         echo -ne "${YELLOW}"
-        read -n 1 -s -r -p "Press A to exit"
-        exit 3
+        if [ -t 0 ]; then read -n 1 -s -r -p "Press A to exit"; fi
+        exit "$OTA_EXIT_PRECOND"
     fi
 
 check_filesystem
@@ -83,15 +108,43 @@ echo "${BLUE}=============  Decompressing new CrossMix archive, please wait...  
 echo "CrossMix archive decompression lasts at least 4 minutes."
 echo -e "\n\n     !!!!!! Please be patient  !!!!!! \n\n"
 /tmp/7zz x -aoa "$UPDATE_FILE" -o"/mnt/SDCARD"
+# GH#29: capture the extractor's status BEFORE any other command runs. The
+# previous `7zz ...; sync; if [ $? -eq 0 ]` tested sync, so a broken archive
+# looked like a successful extraction.
+extract_rc=$?
 sync
 
-if [ $? -eq 0 ]; then
+if [ "$extract_rc" -eq 0 ]; then
   echo -e "${GREEN}CrossMix v$update_version extraction successful.${NC}"
   # infoscreen.sh -m "CrossMix v$update_version extraction successful."
   mv "$UPDATE_FILE" "/mnt/SDCARD/_Updates"
 else
+  # GH#29: do not restore user data on top of a half-extracted system and do
+  # not claim the new version. The archive is left in the SD card root, where
+  # _FirmwareCheck.sh finds it again on the next boot and retries.
   echo -ne "${RED}CrossMix v$update_version extraction encountered errors.${NC}\n"
-  # infoscreen.sh -m "CrossMix v$update_version extraction encountered errors." -t 5
+  echo -e "${RED}Installation aborted; the update archive was kept for a retry.${NC}"
+
+  # The archive carries the new crossmix-version.txt: keep the old one so the
+  # console does not report a version it is not running (and so the retry is
+  # offered again).
+  old_version_file="$BCK_DIR/System/usr/trimui/crossmix-version.txt"
+  if [ -f "$old_version_file" ]; then
+    mkdir -p /mnt/SDCARD/System/usr/trimui 2>/dev/null
+    cp "$old_version_file" /mnt/SDCARD/System/usr/trimui/crossmix-version.txt
+    echo "crossmix-version.txt restored from the backup."
+  fi
+  sync
+  rm -f /tmp/stay_awake
+  echo ondemand >/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null
+  echo 1008000 >/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 2>/dev/null
+  # The installer moves System/ to the backup before extracting, so infoscreen.sh
+  # may not exist any more at this point: the console message above is the
+  # fallback, never a silent exit.
+  if command -v infoscreen.sh >/dev/null 2>&1; then
+    infoscreen.sh -m "CrossMix v$update_version installation FAILED (extraction). Update kept for a retry; reboot and install again." -k "A B START MENU" -fs 28
+  fi
+  exit "$OTA_EXIT_APPLY"
 fi
 
 echo "${BLUE}=====================  Restoring saves and savestates...  =====================${NC}"
@@ -250,21 +303,21 @@ chmod a+x "$output_file"
 # Restore click sound current state
 click_off="$BCK_DIR/Themes/$current_theme/sound/click-off.wav"
 click="$BCK_DIR/Themes/$current_theme/sound/click.wav"
-if [[ -f "$click_off" && ! -f "$click" ]]; then
+if [ -f "$click_off" ] && [ ! -f "$click" ]; then
 	"/mnt/SDCARD/Apps/SystemTools/Menu/SOUND##CLICK (state)/Click sound - Disable.sh"
 fi
 
 # Restore background music current state
 bgm_off="$BCK_DIR/Themes/$current_theme/sound/bgm-off.mp3"
 bgm="$BCK_DIR/Themes/$current_theme/sound/bgm.mp3"
-if [[ -f "$bgm_off" && ! -f "$bgm" ]]; then
+if [ -f "$bgm_off" ] && [ ! -f "$bgm" ]; then
 	"/mnt/SDCARD/Apps/SystemTools/Menu/SOUND##MUSIC (state)/Music - Disable.sh"
 fi
 
 # Restore top left logo current state
 logo_off="$BCK_DIR/Themes/$current_theme/skin/nav-logo-off.png"
 logo="$BCK_DIR/Themes/$current_theme/skin/nav-logo.png"
-if [[ -f "$logo_off" && ! -f "$logo" ]]; then
+if [ -f "$logo_off" ] && [ ! -f "$logo" ]; then
 	"/mnt/SDCARD/Apps/SystemTools/Menu/Imgs/ADVANCED SETTINGS##TOP LEFT LOGO (state)/Top-left logo - Disable.png"
 fi
 
@@ -346,6 +399,7 @@ else
 fi
 sleep 30
 
+return "$OTA_EXIT_OK"
 }
 
 
@@ -523,4 +577,24 @@ repair_rom_path() {
   fi
 }
 
-main
+# GH#29: run main() in a subshell so its own `exit` calls are captured, mirror
+# its output to the console and to $LOG_FILE (replacement for the old
+# `exec > >(tee -a ...)`, which only worked on shells with process
+# substitution), and exit with the installer's real status.
+main_logged() {
+  _ml_rc="/tmp/crossmix_update_rc.$$"
+  rm -f "$_ml_rc"
+  if [ -n "${LOG_FILE:-}" ] && mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null; then
+    { ( main ) 2>&1; echo $? >"$_ml_rc"; } | tee -a "$LOG_FILE"
+  else
+    ( main ) 2>&1
+    echo $? >"$_ml_rc"
+  fi
+  _ml_status=$(cat "$_ml_rc" 2>/dev/null)
+  rm -f "$_ml_rc"
+  [ -n "$_ml_status" ] || _ml_status=$OTA_EXIT_ERROR
+  echo "Installer exit code: $_ml_status"
+  exit "$_ml_status"
+}
+
+main_logged
