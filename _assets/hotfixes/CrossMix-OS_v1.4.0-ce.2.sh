@@ -133,8 +133,13 @@ main() {
     fi
 
     if [ "${fail_payload:-0}" -eq 1 ]; then
-        echo -e "\n${RED}Payload pending.${NC} Scripts are applied; run Check Update again to retry the download."
+        # Scripts are already applied by the unzip above. Stamp the hotfix so the
+        # next boot does not re-download the ~158 MB payload in a loop; the
+        # payload is retried from TOOLS / Firmware Update, which is explicit.
+        echo "$Remote_HotfixVersion" > "$local_hotfix_file"
+        rm -f /tmp/crossmix_hotfix.zip
         sync
+        echo -e "\n${RED}Payload pending.${NC} Scripts are applied and the hotfix is stamped; open TOOLS / Firmware Update to retry the payload download."
         exit 1
     fi
 

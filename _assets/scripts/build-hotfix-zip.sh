@@ -11,6 +11,8 @@
 #   Apps/SystemTools/launch.sh
 #   System/starts/_FirmwareCheck.sh
 #   System/usr/trimui/crossmix-version.txt
+#   System/usr/trimui/scripts/ota_update.sh
+#   System/usr/trimui/scripts/update_common.sh
 #   System/usr/trimui/scripts/update_notification.sh
 #   System/usr/trimui/scripts/update_ota_release.sh
 #   trimui/firmwares/MinFwVersion.txt
@@ -31,6 +33,8 @@ Apps/SystemTools/Menu/TOOLS/Firmware Update.sh
 Apps/SystemTools/launch.sh
 System/starts/_FirmwareCheck.sh
 System/usr/trimui/crossmix-version.txt
+System/usr/trimui/scripts/ota_update.sh
+System/usr/trimui/scripts/update_common.sh
 System/usr/trimui/scripts/update_notification.sh
 System/usr/trimui/scripts/update_ota_release.sh
 trimui/firmwares/MinFwVersion.txt
