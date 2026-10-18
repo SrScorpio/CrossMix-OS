@@ -160,13 +160,29 @@ list. A first scan of a large library is slow, but it finishes. If it never
 finishes, the cause is not the firmware and is not the number of ROMs. Two
 things have been verified on hardware, in this order:
 
-1. **A malformed JSON at the root of `Roms/` hangs the scan forever.**
-   `Roms/favourite2.json` was present, was not valid JSON (a document
-   followed by a second document), and every boot stayed on `cargando`
-   indefinitely. Moving it out of `Roms/` made the menu load on the first
-   try. A console that hangs after someone copies files by hand should get
-   `ls Roms/*.json` and a JSON parse check before anything else.
-   `recentlist.json` in the same folder is normal and is read fine.
+1. **`Roms/favourite2.json` reproduced the hang, twice.** With that file in
+   `Roms/`, every boot stayed on `cargando` indefinitely. Moved out to
+   `Roms.off/`, the menu loaded on the first try, with the full library
+   already restored. `recentlist.json` in the same folder is read fine.
+   **The exact defect is not isolated** (issue #36): `favourite2.json` is
+   line-delimited JSON — one object per line — read line by line by
+   `Favorites - Sort.sh` and `Favorites - Fix No Emus.sh` (`jq empty` per
+   line). A plain `json.load()` fails on it by design, so "not valid JSON" is
+   the wrong test and the wrong conclusion. The hang is either one line that
+   does not parse, or an entry whose `.launch` points at an emulator that is
+   not present. Check both before rewriting the file:
+   ```sh
+   cd Roms
+   # 1. every line must parse on its own
+   while IFS= read -r l; do
+     if [ -n "$l" ] && ! echo "$l" | jq empty >/dev/null 2>&1; then
+       echo "BAD LINE: $l"
+     fi
+   done < favourite2.json
+   # 2. every .launch must point at an emulator script that exists
+   jq -r '.launch' favourite2.json | sed 's#^/mnt/SDCARD#/mnt/crossmix#' |
+   while read -r p; do [ -f "$p" ] || echo "MISSING: $p"; done
+   ```
 2. **Volume alone did not reproduce it.** The library was restored in
    batches. Game Boy, GBC, SNES, Master System, Mega Drive, PSX and PSP
    scanned in seconds. The whole set was then moved in one go (110 systems,
