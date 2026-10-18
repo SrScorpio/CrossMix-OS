@@ -153,7 +153,7 @@ if [ "$version" != "$FW_patched_version" ]; then
     fi
 
     # Restore FW settings
-    if -f "/mnt/SDCARD/trimui/firmwares/Last_Automatic_Backup.txt"; then
+    if [ -f "/mnt/SDCARD/trimui/firmwares/Last_Automatic_Backup.txt" ]; then
         Last_Automatic_Backup=$(cat /mnt/SDCARD/trimui/firmwares/Last_Automatic_Backup.txt)
         if [ -f "/mnt/SDCARD/System/backups/firmware_settings/$current_device/$Last_Automatic_Backup" ]; then
             echo "Restoring firmware settings from $Last_Automatic_Backup"
