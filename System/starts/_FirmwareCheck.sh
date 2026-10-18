@@ -105,7 +105,7 @@ else
         Current_FW_Version="$(cat /etc/version)"
         Required_FW_Version=$(sed -n '1p' "$CrossMixFWfile")
 
-        echo "Current firmware ($Current_FW_Version - $Current_FW_Revision) must be updated to $Required_FW_Version - $Required_FW_Revision to support CrossMix OS v$CrossMix_version."
+        echo "Current firmware ($Current_FW_Version - $Current_FW_Revision) must be updated to $Required_FW_Version - $Required_FW_Revision to support CrossMix-OS SE v$CrossMix_version."
 
         # Install new busybox from PortMaster, credits : https://github.com/kloptops/TRIMUI_EX
 
@@ -302,7 +302,7 @@ if [ -n "$UPDATE_FILE" ]; then
         rootfs_space=$(df / | awk 'NR==2 {print $4}')
         if [ "$rootfs_space" -lt "$minspace" ]; then
             echo "Error: Available space on internal storage is less than 20 MB"
-            infoscreen.sh -m "CrossMix-OS update v$update_version found. Not enough space on internal storage to update." -k "A B START MENU" -fs 30
+            infoscreen.sh -m "CrossMix-OS SE update v$update_version found. Not enough space on internal storage to update." -k "A B START MENU" -fs 30
             exit 1
         else
             echo "Available space on / is sufficient: ${rootfs_space} KB"
@@ -325,15 +325,15 @@ if [ -n "$UPDATE_FILE" ]; then
             sync
         fi
 
-        button=$(infoscreen.sh -m "CrossMix-OS update v$update_version found. Press A to install, B to cancel." -k "A B")
+        button=$(infoscreen.sh -m "CrossMix-OS SE update v$update_version found. Press A to install, B to cancel." -k "A B")
         if [ "$button" = "A" ]; then
             /mnt/SDCARD/System/bin/7zz e "$UPDATE_FILE" "System/usr/trimui/scripts/crossmix_update.sh" -o/tmp -y
             chmod a+x "/tmp/crossmix_update.sh"
             cp /mnt/SDCARD/System/bin/text_viewer /tmp
-            infoscreen.sh -m "Updating CrossMix to v$update_version" -t 1
+            infoscreen.sh -m "Updating CrossMix-OS SE to v$update_version" -t 1
             pkill -9 preload.sh
             pkill -9 runtrimui.sh
-            /tmp/text_viewer -s "/tmp/crossmix_update.sh" -f 25 -t "                            CrossMix-OS Update v$update_version                                      "
+            /tmp/text_viewer -s "/tmp/crossmix_update.sh" -f 25 -t "                            CrossMix-OS SE Update v$update_version                                      "
         fi
     else
         echo "The CrossMix update version ($update_version) is not greater than the current version ($initial_version)."

@@ -7,10 +7,13 @@ if [ ! -f "$Current_bg" ]; then
     Current_bg="/mnt/SDCARD/trimui/res/skin/transparent.png"
 fi
 
-################ CrossMix-OS Version Splashscreen ################
+################ CrossMix-OS SE Version Splashscreen ################
 
+# Branding is text-only: the name comes from the fork, the version stays the
+# functional key read from crossmix-version.txt (never reformat or strip it).
+Brand_Name="CrossMix-OS SE"
 version=$(cat /mnt/SDCARD/System/usr/trimui/crossmix-version.txt)
-/mnt/SDCARD/System/usr/trimui/scripts/infoscreen.sh -i "$Current_bg" -m "CrossMix OS v$version"
+/mnt/SDCARD/System/usr/trimui/scripts/infoscreen.sh -i "$Current_bg" -m "$Brand_Name v$version"
 
 ################ CrossMix-OS internal storage Customization ################
 FW_patched_version=$(cat /usr/trimui/crossmix-version.txt)

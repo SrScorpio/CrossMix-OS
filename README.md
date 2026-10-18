@@ -11,6 +11,7 @@ _Get the best from your TrimUI Smart Pro_
 
 > **CrossMix-OS SE** — Scorpio Edition, maintained fork by [SrScorpio](https://github.com/SrScorpio).
 > Based on [CrossMix-OS](https://github.com/cizia64/CrossMix-OS) by **cizia64** and contributors — all credit for the original work is theirs. Same license: GPL-3.0.
+> Visible branding, what it covers and what stays firmware-owned: [docs/BRANDING.md](docs/BRANDING.md).
 
 <div align="center">
   <a href="https://github.com/SrScorpio/CrossMix-OS-SE/releases/latest">
