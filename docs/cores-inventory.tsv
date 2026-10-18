@@ -1,0 +1,166 @@
+core_file	display_name	display_version	license	referenced_by_count	referenced_by	info_file	present_in_head	present_on_disk
+2048_libretro.so	2048	1.0	Public Domain	0	none	yes	yes	yes
+81_libretro.so	Sinclair - ZX 81 (EightyOne)	1.0a	GPLv3	0	none	yes	yes	yes
+a5200_libretro.so	Atari - 5200 (a5200)	2.0.2	GPLv2	1	ATARI5200	yes	yes	yes
+anarch_libretro.so	Anarch	1.1d	CC0	0	none	yes	yes	yes
+ardens_libretro.so	Arduboy (Ardens)	Git	MIT	1	ARDUBOY	yes	yes	yes
+arduous_libretro.so	Arduboy (Arduous)	0.1.0	GPLv3	1	ARDUBOY	yes	yes	yes
+atari800_libretro.so	Atari - 5200 (Atari800)	3.1.0	GPLv2	1	ATARI800	yes	yes	yes
+b2_libretro.so	Acorn - BBC Micro (b2)	v0.1	GPLv3	0	none	yes	yes	yes
+bennugd_libretro.so	SoRR (BennuGD)	git	GPLv3	0	none	yes	yes	yes
+bk_libretro.so	Elektronika - BK-0010/BK-0011(M)	1.00	BSD	0	none	yes	yes	yes
+bluemsx_libretro.so	MSX/SVI/ColecoVision/SG-1000 (blueMSX)	SVN	GPLv2	3	COLECO,MSX2,MSX	yes	yes	yes
+bnes_libretro.so	Nintendo - NES / Famicom (bnes)	v083	GPLv3	1	FC	yes	yes	yes
+cannonball_libretro.so	Cannonball	1.0	Non-commercial	1	CANNONBALL	yes	yes	yes
+cap32_libretro.so	Amstrad - CPC/GX4000 (Caprice32)	v4.2.0	GPLv2	1	CPC	yes	yes	yes
+chailove_libretro.so	ChaiLove	1.2.1	MIT	1	CHAILOVE	yes	yes	yes
+chimerasnes_libretro.so	Nintendo - SNES / SFC (ChimeraSNES)	UNKNOWN	Non-commercial	1	SFC	yes	yes	yes
+craft_libretro.so	Minecraft (Craft)	v1	MIT	0	none	yes	yes	yes
+crocods_libretro.so	Amstrad - CPC (CrocoDS)	v1	MIT	0	none	yes	yes	yes
+daphne_libretro.so	Arcade (Daphne)	Git	GPLv2+	0	none	yes	yes	yes
+desmume2015_libretro.so	Nintendo - DS (DeSmuME 2015)	SVN	GPLv2	0	none	yes	yes	yes
+dice_libretro.so	Arcade (DICE)	v0.3.0	GPLv3	0	none	yes	yes	yes
+dinothawr_libretro.so	Dinothawr	v1.0	Non-commercial	1	DINOTHAWR	yes	yes	yes
+dosbox_libretro.so	DOS (DOSBox)	SVN	GPLv2	0	none	yes	yes	yes
+dosbox_pure_libretro.so	DOS (DOSBox-Pure)	0.9.9	GPLv2	1	DOS	yes	yes	yes
+dosbox_svn_libretro.so	DOS (DOSBox-SVN)	SVN	GPLv2	0	none	yes	yes	yes
+DoubleCherryGB_libretro.so	UNKNOWN	UNKNOWN	UNKNOWN	0	none	no	yes	yes
+duckstation_libretro.so	Sony - PlayStation (DuckStation)	v0.1	Non-commercial	1	PS	yes	yes	yes
+easyrpg_libretro.so	RPG Maker 2000/2003 (EasyRPG)	0.7.0.0	GPLv3	1	EASYRPG	yes	yes	yes
+ecwolf_libretro.so	Wolfenstein 3D (ECWolf)	UNKNOWN	BSD|LGPL	0	none	yes	yes	yes
+ep128emu_core_libretro.so	Enterprise - 64/128 (ep128emu)	v1.2.1	GPLv2	2	ENTERPRISE,VIDEOTON	yes	yes	yes
+fake08_libretro.so	Pico-8 (FAKE-08)	v0.0.2.19	MIT	1	PICO	yes	yes	yes
+fbalpha2012_cps1_libretro.so	Arcade (FB Alpha 2012 CPS-1)	v0.2.97.28	Non-commercial	0	none	yes	yes	yes
+fbalpha2012_cps2_libretro.so	Arcade (FB Alpha 2012 CPS-2)	v0.2.97.28	Non-commercial	0	none	yes	yes	yes
+fbalpha2012_cps3_libretro.so	Arcade (FB Alpha 2012 CPS-3)	v0.2.97.29	Non-commercial	0	none	yes	yes	yes
+fbalpha2012_libretro.so	Arcade (FB Alpha 2012)	v0.2.97.29	Non-commercial	4	CPS1,CPS2,CPS3,PGM	yes	yes	yes
+fbalpha2012_neogeo_libretro.so	Arcade (FB Alpha 2012 Neo Geo)	v0.2.97.29	Non-commercial	1	NEOGEO	yes	yes	yes
+fbalpha_libretro.so	UNKNOWN	UNKNOWN	UNKNOWN	1	FBNEO	no	yes	yes
+fbneo_libretro.so	Arcade (FinalBurn Neo)	v1.0.0.03	Non-commercial	6	CPS1,CPS2,CPS3,FBNEO,NEOGEO,PGM	yes	yes	yes
+fceumm_libretro.so	Nintendo - NES / Famicom (FCEUmm)	SVN	GPLv2	2	FC,FDS	yes	yes	yes
+fceunext_libretro.so	UNKNOWN	UNKNOWN	UNKNOWN	0	none	no	yes	yes
+ffmpeg_libretro.so	FFmpeg	Git	LGPLv2, GPLv2	2	MUSIC,VIDEOS	yes	yes	yes
+flycast_libretro.so	Sega - Dreamcast/Naomi (Flycast)	Git	GPLv2	3	ATOMISWAVE,DC,NAOMI	yes	yes	no
+fmsx_libretro.so	Microsoft - MSX (fMSX)	6.0	Non-commercial	2	MSX2,MSX	yes	yes	no
+freechaf_libretro.so	Fairchild ChannelF (FreeChaF)	GIT	GPLv3	1	CHANNELF	yes	yes	no
+freeintv_libretro.so	Mattel - Intellivision (FreeIntv)	2018.1.5	GPLv3	1	INTELLIVISION	yes	yes	no
+fuse_libretro.so	Sinclair - ZX Spectrum (Fuse)	1.6.0	GPLv3	1	ZXS	yes	yes	no
+gambatte_gb_libretro.so	UNKNOWN	UNKNOWN	UNKNOWN	0	none	no	yes	no
+gambatte_libretro.so	Nintendo - Game Boy / Color (Gambatte)	v0.5.0	GPLv2	2	GBC,GB	yes	yes	no
+gearboy_libretro.so	Nintendo - Game Boy / Color (Gearboy)	3.4.1	GPLv3	2	GBC,GB	yes	yes	no
+gearcoleco_libretro.so	Coleco - ColecoVision (Gearcoleco)	1.0.0	GPLv3	1	COLSGM	yes	yes	no
+gearsystem_libretro.so	Sega - MS/GG/SG-1000 (Gearsystem)	3.2.0	GPLv3	0	none	yes	yes	no
+genesis_plus_gx_libretro.so	Sega - MS/GG/MD/CD (Genesis Plus GX)	v1.7.4	Non-commercial	6	GG,MD,MDMSU,MS,SEGACD,SG1000	yes	yes	no
+genesis_plus_gx_punchium_libretro.so	Sega - MS/GG/MD/CD (Genesis Plus GX PUNCHIUM)	UNKNOWN	Non-commercial	2	MD,MDMSU	yes	yes	no
+genesis_plus_gx_wide_libretro.so	Sega - MS/GG/MD/CD (Genesis Plus GX Wide)	v1.7.4	Non-commercial	3	MD,MDMSU,SEGACD	yes	yes	no
+geolith_libretro.so	UNKNOWN	UNKNOWN	UNKNOWN	1	NEOGEO	no	yes	no
+gme_libretro.so	Game Music Emu	Git	GPLv3	0	none	yes	yes	no
+gpsp_libretro.so	Nintendo - Game Boy Advance (gpSP)	Git	GPLv2	1	GBA	yes	yes	no
+gw_libretro.so	Handheld Electronic (GW)	Git	zlib	1	GW	yes	yes	no
+handy_libretro.so	Atari - Lynx (Handy)	0.95	Zlib	1	LYNX	yes	yes	no
+hatari_libretro.so	Atari - ST/STE/TT/Falcon (Hatari)	1.8	GPLv2	1	ATARIST	yes	yes	no
+imageviewer_libretro.so	Imageviewer	UNKNOWN	UNKNOWN	0	none	yes	yes	no
+jaxe_libretro.so	CHIP-8/S-CHIP/XO-CHIP (JAXE)	GIT	MIT	0	none	yes	yes	no
+jumpnbump_libretro.so	Jump 'n Bump	v0.1	GPLv2	0	none	yes	yes	no
+km_daphne_xtreme_libretro.so	ARC (km_Daphne Xtreme)	Git	GPLv2+	1	DAPHNE	yes	yes	no
+km_mame2003_xtreme_amped_libretro.so	Arcade (km_MAME 2003 Xtreme)	2K21	MAME Noncommercial	1	MAME2003PLUS	yes	yes	no
+lowresnx_libretro.so	LowRes NX	v1.2	zlib	1	LOWRESNX	yes	yes	no
+lutro_libretro.so	Lua Engine (Lutro)	v1	MIT	1	LUTRO	yes	yes	no
+m2000_libretro.so	Philips - P2000T (M2000)	0.9.3	GPLv3	0	none	yes	yes	no
+mame2000_libretro.so	Arcade (MAME 2000)	0.37b5	MAME	1	MAME	yes	yes	no
+mame2003_libretro.so	Arcade (MAME 2003)	0.78	MAME	0	none	yes	yes	no
+mame2003_plus_libretro.so	Arcade (MAME 2003-Plus)	2003-Plus	MAME Noncommercial	1	MAME2003PLUS	yes	yes	no
+mame2010_libretro.so	Arcade (MAME 2010)	0.139	MAME	1	MAME2010	yes	yes	no
+mame2015_libretro.so	Arcade (MAME 2015)	0.160	MAME	1	MAME	yes	yes	no
+mame2016_libretro.7z	UNKNOWN	UNKNOWN	UNKNOWN	0	none	no	yes	no
+mame219_libretro.7z	UNKNOWN	UNKNOWN	UNKNOWN	0	none	no	yes	no
+mame_libretro.7z	UNKNOWN	UNKNOWN	UNKNOWN	0	none	no	yes	no
+mednafen_gba_libretro_libretro.so	UNKNOWN	UNKNOWN	UNKNOWN	0	none	no	yes	no
+mednafen_gba_libretro.so	Nintendo - Game Boy Advance (Beetle GBA)	v0.9.36	GPLv2	0	none	yes	yes	no
+mednafen_lynx_libretro.so	Atari - Lynx (Beetle Lynx)	v1.24.0	Zlib|GPLv2	0	none	yes	yes	no
+mednafen_ngp_libretro.so	SNK - Neo Geo Pocket / Color (Beetle NeoPop)	v0.9.36.1	GPLv2	2	NGC,NGP	yes	yes	no
+mednafen_pce_fast_libretro.so	NEC - PC Engine / CD (Beetle PCE FAST)	v0.9.38.7	GPLv2	2	PCECD,PCE	yes	yes	no
+mednafen_pcfx_libretro.so	NEC - PC-FX (Beetle PC-FX)	v0.9.33.3	GPLv2	1	PCFX	yes	yes	no
+mednafen_supafaust_libretro.so	Nintendo - SNES / SFC (Beetle Supafaust)	1.29.0	GPLv2+	1	SFC	yes	yes	no
+mednafen_supergrafx_libretro.so	NEC - PC Engine SuperGrafx (Beetle SuperGrafx)	v1.23.0	GPLv2	1	SFX	yes	yes	no
+mednafen_vb_libretro.so	Nintendo - Virtual Boy (Beetle VB)	v0.9.36.1	GPLv2	1	VB	yes	yes	no
+mednafen_wswan_libretro.so	Bandai - WonderSwan/Color (Beetle Cygne)	v0.9.35.1	GPLv2	2	WSC,WS	yes	yes	no
+melonds_libretro.so	Nintendo - DS (melonDS)	Git	GPLv3	0	none	yes	yes	no
+mesen_libretro.so	Nintendo - NES / Famicom (Mesen)	0.9.9	GPLv3	1	FC	yes	yes	no
+mess2015_libretro.so	Multi (MESS 2015)	Git	MAME	0	none	yes	yes	no
+mess_libretro.7z	UNKNOWN	UNKNOWN	UNKNOWN	0	none	no	yes	no
+meteor_libretro.so	Nintendo - Game Boy Advance (Meteor)	v1.4	GPLv3	1	GBA	yes	yes	no
+mgba_libretro.so	Nintendo - Game Boy Advance (mGBA)	0.10-dev	MPLv2.0	4	GBA,GBC,GB,SGB	yes	yes	no
+minivmac_libretro.so	Mac II (minivmac)	GIT	GPLv2	1	VMAC	yes	yes	no
+mpv_libretro.so	MPV	Git	LGPLv2, GPLv2	0	none	yes	yes	no
+mrboom_libretro.so	Mr.Boom (Bomberman)	3.1	MIT	0	none	yes	yes	no
+mu_libretro.so	Palm OS (Mu)	v1.3.0	CC BY-NC 3.0 US (Non-commercial)	1	PALMOS	yes	yes	no
+mupen64plus_libretro.so	UNKNOWN	UNKNOWN	UNKNOWN	1	N64	no	yes	no
+mupen64plus_next_libretro.so	Nintendo - Nintendo 64 (Mupen64Plus-Next)	1.0	GPLv2	0	none	yes	yes	no
+nekop2_libretro.so	NEC - PC-98 (Neko Project II)	0.86	MIT	1	PC98	yes	yes	no
+neocd_libretro.so	SNK - Neo Geo CD (NeoCD)	2019	LGPLv3	1	NEOCD	yes	yes	no
+nestopia_libretro.so	Nintendo - NES / Famicom (Nestopia UE)	1.51.1	GPLv2	1	FC	yes	yes	no
+np2kai_libretro.so	NEC - PC-98 (Neko Project II Kai)	0.86	MIT	0	none	yes	yes	no
+numero_libretro.so	Texas Instruments TI-83 (Numero)	v1.0	GPLv2	1	TI83	yes	yes	no
+nxengine_libretro.so	Cave Story (NXEngine)	1.0.0.6	GPLv3	1	CAVESTORY	yes	yes	no
+o2em_libretro.so	Magnavox - Odyssey2 / Phillips Videopac+ (O2EM)	1.18	Artistic License	1	VIDEOPAC	yes	yes	no
+onscripter_libretro.so	ONScripter	0.1	GPLv3+	0	none	yes	yes	no
+opera_libretro.so	The 3DO Company - 3DO (Opera)	1.0.0	LGPL/Non-commercial	1	PANASONIC	yes	yes	no
+parallel_n64_libretro.so	Nintendo - Nintendo 64 (ParaLLEl N64)	2.0-rc2	GPLv2	1	N64	yes	yes	no
+pcsx_rearmed_libretro.so	Sony - PlayStation (PCSX ReARMed)	r21	GPLv2	1	PS	yes	yes	no
+picodrive_libretro.so	Sega - MS/GG/MD/CD/32X (PicoDrive)	1.99	MAME	7	GG,MDMSU,MD,MS,SEGA32X,SEGACD,SG1000	yes	yes	no
+pocketcdg_libretro.so	PocketCDG	Git	MIT	0	none	yes	yes	no
+pokemini_libretro.so	Nintendo - Pokemon Mini (PokeMini)	v0.60	GPLv3	1	POKEMINI	yes	yes	no
+potator_libretro.so	Watara - Supervision (Potator)	1.0.5	Public Domain	1	SUPERVISION	yes	yes	no
+ppsspp_libretro.so	Sony - PlayStation Portable (PPSSPP)	Git	GPLv2	0	none	yes	yes	no
+prboom_libretro.so	Doom (PrBoom)	v2.5.0	GPLv2	1	DOOM	yes	yes	no
+prosystem_libretro.so	Atari - 7800 (ProSystem)	1.3e	GPLv2	1	ATARI7800	yes	yes	no
+puae2021_libretro.so	Commodore - Amiga (PUAE 2021)	v2.6.1	GPLv2	1	AMIGA	yes	yes	no
+puae_libretro.so	Commodore - Amiga (PUAE)	v4.9.1	GPLv2	2	AMIGACD,AMIGACDTV	yes	yes	no
+px68k_libretro.so	Sharp - X68000 (PX68k)	0.15+	Custom Non-Commercial	1	X68000	yes	yes	no
+quasi88_libretro.so	NEC - PC-8000 / PC-8800 series (QUASI88)	0.6.4	BSD 3-Clause and MAME non-commercial	1	PC88	yes	yes	no
+quicknes_libretro.so	Nintendo - NES / Famicom (QuickNES)	1.0-WIP	LGPLv2.1+	1	FC	yes	yes	no
+race_libretro.so	SNK - Neo Geo Pocket / Color (RACE)	v2.16	GPLv2	0	none	yes	yes	no
+reminiscence_libretro.so	Flashback (REminiscence)	0.3.6	GPLv3	1	FLASHBACK	yes	yes	no
+retro8_libretro.so	PICO-8 (Retro8)	Git	GPLv3	0	none	yes	yes	no
+sameboy_libretro.so	Nintendo - Game Boy / Color (SameBoy)	0.14.7	MIT	0	none	yes	yes	no
+same_cdi_libretro.so	Philips - CDi (SAME CDi)	Git	GPLv2+	0	none	yes	yes	no
+sameduck_libretro.so	Mega Duck / Cougar Boy (SameDuck)	git	MIT	1	MEGADUCK	yes	yes	no
+scummvm_libretro-2.9.so	UNKNOWN	UNKNOWN	UNKNOWN	1	SCUMMVM	no	yes	no
+scummvm_libretro.7z	UNKNOWN	UNKNOWN	UNKNOWN	0	none	no	yes	no
+snes9x2002_libretro.so	Nintendo - SNES / SFC (Snes9x 2002)	7.2.0	Non-commercial	1	SFC	yes	yes	no
+snes9x2005_libretro.so	Nintendo - SNES / SFC (Snes9x 2005)	v1.36	Non-commercial	1	SFC	yes	yes	no
+snes9x2005_plus_libretro.so	Nintendo - SNES / SFC (Snes9x 2005 Plus)	v1.36	Non-commercial	0	none	yes	yes	no
+snes9x2010_libretro.so	Nintendo - SNES / SFC (Snes9x 2010)	v1.52.4	Non-commercial	0	none	yes	yes	no
+snes9x_libretro.so	Nintendo - SNES / SFC (Snes9x - Current)	1.61	Non-commercial	4	SATELLAVIEW,SFCMSU,SFC,SUFAMI	yes	yes	no
+stella2014_libretro.so	Atari - 2600 (Stella 2014)	3.9.3	GPLv2	1	ATARI2600	yes	yes	no
+stella_libretro.so	Atari - 2600 (Stella)	6.6	GPLv2	1	ATARI2600	yes	yes	no
+superflappybirds_libretro.so	UNKNOWN	UNKNOWN	UNKNOWN	0	none	no	yes	no
+swanstation_libretro.so	Sony - PlayStation (SwanStation)	v0.1	GPLv3	1	PS	yes	yes	no
+tamalibretro_libretro.so	Bandai - Tamagotchi P1 (TamaLIBretro)	1.0	GPL-2.0	0	none	yes	yes	no
+tgbdual_libretro.so	Nintendo - Game Boy / Color (TGB Dual)	v0.8.3	GPLv2	2	GBC,GB	yes	yes	no
+theodore_libretro.so	Thomson - MO/TO (Theodore)	Git	GPLv3	1	THOMSON	yes	yes	no
+tic80_libretro.so	TIC-80	0.80.0	MIT	1	TIC	yes	yes	no
+tyrquake_libretro.so	Quake (TyrQuake)	v0.62	GPLv2	1	TYRQUAKE	yes	yes	no
+uae4arm_libretro.so	Commodore - Amiga (UAE4ARM)	v0.5	GPLv2	0	none	yes	yes	no
+uzem_libretro.so	Uzebox (Uzem)	UNKNOWN	MIT	1	UZEBOX	yes	yes	no
+vbam_libretro.so	Nintendo - Game Boy Advance (VBA-M)	2.1.4	GPLv2	1	GBA	yes	yes	no
+vba_next_libretro.so	Nintendo - Game Boy Advance (VBA Next)	SVN	GPLv2	1	GBA	yes	yes	no
+vecx_libretro.so	GCE - Vectrex (vecx)	SVN	GPLv3	1	VECTREX	yes	yes	no
+vemulator_libretro.so	VeMUlator	0.1	GPL v3	0	none	yes	yes	no
+vice_x128_libretro.so	Commodore - C128 (VICE x128)	3.7	GPLv2	0	none	yes	yes	no
+vice_x64_libretro.so	Commodore - C64 (VICE x64, fast)	3.7	GPLv2	1	C64	yes	yes	no
+vice_x64sc_libretro.so	Commodore - C64 (VICE x64sc, accurate)	3.7	GPLv2	0	none	yes	yes	no
+vice_xcbm2_libretro.so	Commodore - CBM-II 6x0/7x0 (VICE xcbm2)	3.7	GPLv2	0	none	yes	yes	no
+vice_xcbm5x0_libretro.so	Commodore - CBM-II 5x0 (VICE xcbm5x0)	3.7	GPLv2	0	none	yes	yes	no
+vice_xpet_libretro.so	Commodore - PET (VICE xpet)	3.7	GPLv2	1	CPET	yes	yes	no
+vice_xplus4_libretro.so	Commodore - PLUS/4 (VICE xplus4)	3.7	GPLv2	1	CPLUS4	yes	yes	no
+vice_xscpu64_libretro.so	Commodore - C64 SuperCPU (VICE xscpu64)	3.7	GPLv2	0	none	yes	yes	no
+vice_xvic_libretro.so	Commodore - VIC-20 (VICE xvic)	3.7	GPLv2	1	VIC20	yes	yes	no
+virtualjaguar_libretro.so	Atari - Jaguar (Virtual Jaguar)	v2.1.0	GPLv3	0	none	yes	yes	no
+wasm4_libretro.so	WASM-4	2.1.0	ISC	0	none	yes	yes	no
+x1_libretro.so	Sharp X1 (X Millennium)	0.60	BSD	1	X1	yes	yes	no
+xrick_libretro.so	Rick Dangerous (XRick)	1.0.0.6	GPLv3	1	XRICK	yes	yes	no
+yabasanshiro_libretro.so	Sega - Saturn (YabaSanshiro)	v2.6.8	GPLv2	1	SATURN	yes	yes	no
+yabause_libretro.so	Sega - Saturn (Yabause)	v0.9.15	GPLv2	0	none	yes	yes	no
+zc210_libretro.so	Zelda Classic v2.10 (ZC210)	2.10	GNU v3.0	1	ZQUEST	yes	yes	no
