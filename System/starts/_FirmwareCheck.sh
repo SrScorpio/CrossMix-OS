@@ -239,7 +239,7 @@ else
 
         if [ "$crc_verified" = true ]; then
             # Removing backup from previous FW update runs
-            if -f "/mnt/SDCARD/trimui/firmwares/Last_Automatic_Backup.txt"; then
+            if [ -f "/mnt/SDCARD/trimui/firmwares/Last_Automatic_Backup.txt" ]; then
                 Last_Automatic_Backup=$(cat /mnt/SDCARD/trimui/firmwares/Last_Automatic_Backup.txt)
                 if [ -f "/mnt/SDCARD/System/backups/firmware_settings/$current_device/$Last_Automatic_Backup" ]; then
                     echo "Removing last automatic backup: $Last_Automatic_Backup"
