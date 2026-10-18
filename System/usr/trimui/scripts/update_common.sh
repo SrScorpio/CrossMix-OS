@@ -237,3 +237,56 @@ download_file() {
         return 1
     fi
 }
+
+# --- GH#29 canonical version comparison -------------------------------------
+# Accepted forms: <base>[-dev[.N] | -ce.N[.M]] where <base> is 3..6
+# dot-separated integers 0..999 (e.g. 1.4.0, 1.4.0.1). Anything else
+# (empty, garbage, missing components, non-numeric suffix) is INVALID:
+# no output, return 1. Versions never fall through to "equal".
+# Ordering: base ascending (zero-padded); same base: dev < plain < ce,
+# then suffix numbers ascending (so 1.4.0 < 1.4.0-ce.1 < 1.4.0-ce.2.9
+# < 1.4.0-ce.2.10 < 1.4.1). Key is fixed-width digits, compared
+# lexicographically (fits no integer type).
+_cmx_key() {
+    _cmx_v="$1"
+    [ -n "$_cmx_v" ] || return 1
+    case "$_cmx_v" in *[!0-9.a-zA-Z-]*) return 1 ;; *-) return 1 ;; esac
+    _cmx_base="${_cmx_v%%-*}"
+    if [ "$_cmx_base" = "$_cmx_v" ]; then _cmx_sfx=""; else _cmx_sfx="${_cmx_v#*-}"; fi
+    case "$_cmx_base" in ""|.*|*.|*..*) return 1 ;; esac
+    case "$_cmx_sfx" in
+        "")          _cmx_cls=2; _cmx_ek="0000000000000000" ;;
+        dev)         _cmx_cls=1; _cmx_ek="0000000000000000" ;;
+        dev.[0-9]*)  _cmx_n="${_cmx_sfx#dev.}"
+                     case "$_cmx_n" in ""|*[!0-9]*) return 1 ;; esac
+                     _cmx_cls=1; _cmx_ek=$(printf '%08d%08d' "$_cmx_n" 0) ;;
+        ce.[0-9]*)   _cmx_r="${_cmx_sfx#ce.}"; _cmx_n="${_cmx_r%%.*}"; _cmx_m="${_cmx_r#*.}"
+                     [ "$_cmx_m" = "$_cmx_r" ] && _cmx_m=0
+                     case "$_cmx_n" in ""|*[!0-9]*) return 1 ;; esac
+                     case "$_cmx_m" in ""|*[!0-9]*) return 1 ;; esac
+                     _cmx_cls=3; _cmx_ek=$(printf '%08d%08d' "$_cmx_n" "$_cmx_m") ;;
+        *)           return 1 ;;
+    esac
+    _cmx_kb=$(printf '%s\n' "$_cmx_base" | awk -F. '{
+        if (NF < 3 || NF > 6) exit 1;
+        for (i = 1; i <= NF; i++) if ($i !~ /^[0-9][0-9]?[0-9]?$/) exit 1;
+        printf "%03d%03d%03d%03d%03d%03d", $1, $2, $3, (NF >= 4 ? $4 : 0), (NF >= 5 ? $5 : 0), (NF >= 6 ? $6 : 0);
+    }') || return 1
+    [ -n "$_cmx_kb" ] || return 1
+    printf '%s%d%s' "$_cmx_kb" "$_cmx_cls" "$_cmx_ek"
+}
+
+# Output on stdout: "-1" (A < B), "0" (equal), "1" (A > B).
+# Invalid input: no output, return 1 (callers must handle explicitly).
+cmp_crossmix_versions() {
+    _cmx_ka=$(_cmx_key "$1") || return 1
+    _cmx_kb=$(_cmx_key "$2") || return 1
+    if [ "$_cmx_ka" \< "$_cmx_kb" ]; then
+        echo "-1"
+    elif [ "$_cmx_ka" \> "$_cmx_kb" ]; then
+        echo "1"
+    else
+        echo "0"
+    fi
+}
+# --- end GH#29 ---------------------------------------------------------------

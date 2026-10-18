@@ -27,10 +27,8 @@ log() {
     fi
 }
 
-# Convert x.y.z[.w][-suffix] into comparable integer
-get_version() {
-    echo "$1" | tr -d '[:alpha:]' | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'
-}
+# Convert x.y.z[.w][-suffix] into comparable integer — replaced by the canonical
+# cmp_crossmix_versions() in update_common.sh (GH#29).
 
 has_ip() {
     ip route get 1 2>/dev/null | awk '/src/ {print $NF; exit}'
@@ -104,7 +102,6 @@ check_major_release() {
     remote_version_core="${release_full_version%-dev*}"
 
     local_full_version=$(cat /mnt/SDCARD/System/usr/trimui/crossmix-version.txt 2>/dev/null)
-    local_version_core="${local_full_version%-dev*}"
 
     if [ -z "$local_full_version" ]; then
         log "Local version missing; flagging update $release_full_version."
@@ -113,10 +110,16 @@ check_major_release() {
         return 0
     fi
 
-    local_v=$(get_version "$local_version_core")
-    remote_v=$(get_version "$remote_version_core")
+    # GH#29: single canonical comparison (CE builds, legacy and dev ordered;
+    # equality exact; invalid versions handled explicitly, never as equal).
+    cmp=$(cmp_crossmix_versions "$local_full_version" "$release_full_version")
+    if [ -z "$cmp" ]; then
+        log "Invalid version string (local '$local_full_version' / release '$release_full_version'); skipping update flag."
+        rm -f "$RELEASE_META"
+        return 1
+    fi
 
-    if [ "$local_v" -lt "$remote_v" ] || { [ "$local_v" -eq "$remote_v" ] && [ "$local_full_version" != "$release_full_version" ]; }; then
+    if [ "$cmp" = "-1" ]; then
         rm -f "$HOTFIX_META"
         write_result_json "$name" "$url" "$size" "$created" || { rm -f "$RELEASE_META"; return 1; }
         log "Update available: $local_full_version -> $release_full_version ($size bytes)."
@@ -128,19 +131,6 @@ check_major_release() {
 
     rm -f "$RELEASE_META"
     return 1
-}
-
-# Empaqueta una version en un entero comparable: cada componente a 3 digitos.
-# "1.4.0-ce.2.10" -> "1.4.0.2.10" -> 001004000002010. Necesario porque las
-# versiones CE llevan sufijo (-ce) y restar puntos no da un numero valido.
-ver_key() {
-    v=$(echo "$1" | sed 's/[^0-9.]/./g' | tr -s '.' | sed 's/^\.//; s/\.$//')
-    a=$(echo "$v" | cut -d. -f1); a=${a:-0}
-    b=$(echo "$v" | cut -d. -f2); b=${b:-0}
-    c=$(echo "$v" | cut -d. -f3); c=${c:-0}
-    d=$(echo "$v" | cut -d. -f4); d=${d:-0}
-    e=$(echo "$v" | cut -d. -f5); e=${e:-0}
-    printf '%03d%03d%03d%03d%03d' "$a" "$b" "$c" "$d" "$e"
 }
 
 # Check hotfix availability for a given base version (e.g., 1.3.0)
@@ -173,7 +163,10 @@ check_hotfix() {
         local_hotfix=$(echo "$remote_hotfix" | sed 's/\(.*\).$/\10/')
     fi
 
-    if [ "$(ver_key "$remote_hotfix")" -gt "$(ver_key "$local_hotfix")" ]; then
+    # GH#29: canonical comparison; remote must be strictly greater (no downgrade,
+    # no equal re-flag). Invalid local/remote hotfix version -> explicit skip.
+    hcmp=$(cmp_crossmix_versions "$remote_hotfix" "$local_hotfix") || hcmp=""
+    if [ "$hcmp" = "1" ]; then
         cat >"$HOTFIX_META" <<EOF
 {
   "for_version": "$base_version",
