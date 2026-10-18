@@ -250,7 +250,7 @@ download_file() {
 _cmx_key() {
     _cmx_v="$1"
     [ -n "$_cmx_v" ] || return 1
-    case "$_cmx_v" in *[!0-9.a-zA-Z-]*) return 1 ;; esac
+    case "$_cmx_v" in *[!0-9.a-zA-Z-]*) return 1 ;; *-) return 1 ;; esac
     _cmx_base="${_cmx_v%%-*}"
     if [ "$_cmx_base" = "$_cmx_v" ]; then _cmx_sfx=""; else _cmx_sfx="${_cmx_v#*-}"; fi
     case "$_cmx_base" in ""|.*|*.|*..*) return 1 ;; esac
