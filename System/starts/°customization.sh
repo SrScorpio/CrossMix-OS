@@ -199,6 +199,22 @@ fi
 
 ######################### CrossMix-OS at each boot #########################
 
+# A corrupt favourites list (a line that does not parse, or an entry whose
+# .launch points to an emulator that no longer exists) makes MainUI stay on its
+# loading screen forever, with no way into the menu. Repair it before the menu is
+# started. The guard is time-boxed and its failure is deliberately ignored: a
+# problem in the guard must never be able to block the boot.
+if [ -f /mnt/SDCARD/Roms/favourite2.json ]; then
+    favorites_guard="/mnt/SDCARD/System/usr/trimui/scripts/favorites_guard.sh"
+    if [ -f "$favorites_guard" ]; then
+        if command -v timeout >/dev/null 2>&1; then
+            timeout 120 /bin/sh "$favorites_guard" >/dev/null 2>&1 || true
+        else
+            /bin/sh "$favorites_guard" >/dev/null 2>&1 || true
+        fi
+    fi
+fi
+
 # override empty password on firmware >= v1.1.1
 echo "root:tina" | chpasswd
 
