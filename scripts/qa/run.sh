@@ -32,7 +32,7 @@ MANIFEST_TEST="$ROOT/.github/scripts/tests/release-manifest-test.sh"
 # Defects confirmed in the tree; tracked in docs/QA-COVERAGE.md section 6.
 # They stay visible on every run. --strict turns them into hard failures so a
 # release gate cannot quietly ship on top of them.
-KNOWN_DEFECTS="sh-lint-if-test-flag release-asset-selection"
+KNOWN_DEFECTS=""
 
 PASS=0
 FAIL=0
@@ -352,8 +352,10 @@ case_release_asset_selection() {
 	[ -f "$REL" ] || { skip release-asset-selection "script not present"; return; }
 	command -v jq >/dev/null 2>&1 || { skip release-asset-selection "jq not available"; return; }
 	# Take the selector filter straight from the script so the case follows the
-	# code instead of duplicating it.
-	filter=$(sed -n "s/.*jq '\(\.assets\[\]?[^']*\)'.*/\1/p" "$REL" | head -n 1)
+	# code instead of duplicating it. The selector is a multi-line jq program
+	# inside `jq -c '...'`, so it is extracted by range, not by line regex.
+	filter=$(sed -n "/Release_asset=.*jq -c '/,/^[[:space:]]*| \.\[0\] \/\/ empty')/p" "$REL" \
+		| sed "1s/.*jq -c '//" | sed "s/')$//")
 	[ -n "$filter" ] || { skip release-asset-selection "cannot read the asset filter"; return; }
 	# A release carries the image, the image manifest and the hotfix manifest;
 	# all three contain "CrossMix-OS_v" in their names.
@@ -364,7 +366,7 @@ case_release_asset_selection() {
  {"name":"CrossMix-OS_v1.4.0-ce.2.7z","browser_download_url":"https://example/i.7z","size":2100000000},
  {"name":"trimui_tg5040_firmware.7z.001","browser_download_url":"https://example/fw.001","size":1024}]}
 EOF
-	names=$(jq -r "$filter | .name" "$WORK/release.json" 2>/dev/null)
+	names=$(jq -r "$filter | .name // empty" "$WORK/release.json" 2>/dev/null)
 	count=$(printf '%s\n' "$names" | sed '/^$/d' | wc -l | tr -d ' ')
 	# Exactly one candidate, and it must be the downloadable image.
 	if [ "$count" = "1" ] && printf '%s\n' "$names" | grep -Eq '\.(7z|zip)$'; then

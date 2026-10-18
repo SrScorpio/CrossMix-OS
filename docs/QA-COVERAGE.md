@@ -55,7 +55,7 @@ Legend: **U** = shell-unit (pure functions, fixtures), **I** = integration with 
 | 1 | **OTA chain driver & exit-code contract** — `ota_update.sh:133-184`, `update_common.sh:5-41,109-123` | NONE | NONE | MANUAL | Contract is documentation only. `ota_run_logged` (the pipe-status trick that #29 depends on) has no test; `report_failure` wording is unchecked. |
 | 2 | **Bootstrap self-refresh** — `_assets/scripts/ota_bootstrap.sh:10-79` | NONE | NONE | MANUAL | Replaces `update_common.sh` + 6 scripts from `raw.githubusercontent.com` on every run. Untested by construction: it rewrites the code under test. |
 | 3 | **Version comparator** — `update_common.sh:342-392` | COVERED | — | — | `scripts/qa/run.sh` case `version-compare`: 17 rows of ordering and rejection (equal, `dev`, `ce.N.M`, 4-component, 1000-range overflow, `-ce`, `-ce.x`, empty, `1.4`). |
-| 4 | **Release discovery** — `update_ota_release.sh:81-157` | NONE | PARTIAL | MANUAL | `release-asset-selection` asserts exactly one image candidate from a 4-asset release payload; **it fails today** (section 6, D1). No fixture covers the `releases/latest` 404 path or the missing-`size` guard at `:106-113`. |
+| 4 | **Release discovery** — `update_ota_release.sh:81-157` | NONE | PARTIAL | MANUAL | `release-asset-selection` asserts exactly one image candidate from a 4-asset release payload (green since #44). No fixture covers the `releases/latest` 404 path or the missing-`size` guard at `:106-113`. |
 | 5 | **Download + size verification** — `download_file` (`update_common.sh:275-340`), `check_update` (`update_ota_release.sh:188-204`) | NONE | NONE | MANUAL | Verification is *length equality only* (`:196`); no digest, no archive test before `reboot`. Nothing tests the `_tmp` rename or the free-space pre-check. |
 | 6 | **Staging + reboot** — `update_ota_release.sh:206-249` | NONE | NONE | MANUAL | The `success` marker (`:235`) is the only signal the UI trusts. Untested: partial `mv`, missing `crossmix_update.sh` download, `reboot` on a console with no update actually staged. |
 | 7 | **Boot installer** — `crossmix_update.sh:10-402` | NONE | NONE | MANUAL | Moves `System/` etc. into `_Updates/Backup_*` (`:96-100`) *before* extracting (`:110-114`). No staging, no rollback beyond `crossmix-version.txt` (`:128-136`). Save/state migration (`:150-259`) is entirely untested. |
@@ -251,18 +251,17 @@ recovery. The only real gate is a human reading `7zz t` output.
 ## 6. Defects found while writing this (not coverage gaps)
 
 **D1 — `release-asset-selection` fails.** `FACT`: 3 assets match
-`contains("CrossMix-OS_v")` on a release that carries both manifests. See G1. Fix in
-`update_ota_release.sh` (anchor to `CrossMix-OS_v<tag>.7z|.zip`, reject split volumes
-explicitly, prefer the same matcher as `update_notification.sh`), then the case goes green.
+`contains("CrossMix-OS_v")` on a release that carries both manifests. See G1.
+**RESOLVED in #44**: anchored to `CrossMix-OS_v<tag>.7z|.zip` with size/url checks and
+`.7z` preference. Case green: 1 candidate.
 
 **D2 — `sh-lint-if-test-flag` fails.** `FACT`: `System/starts/_FirmwareCheck.sh:242` and
-`System/starts/°customization.sh:156`. See G5. Fix is two characters per site; it is left
-unfixed here because this branch is documentation + harness only.
+`System/starts/°customization.sh:156`. See G5.
+**RESOLVED in #44**: `[ -f ... ]` at both sites. Case green.
 
-Both are listed in `KNOWN_DEFECTS` inside the harness so that
-`sh scripts/qa/run.sh` stays green for CI while `--strict` keeps them visible. They must
-be removed from that list when fixed — a stale `KNOWN_DEFECTS` entry is how a defect
-becomes permanent.
+Both were listed in `KNOWN_DEFECTS` while open and were removed from that list when fixed,
+as this section required. The harness now runs 12/12 with no `KNOWN` and no `skip`, and
+`--strict` exits 0.
 
 ---
 
