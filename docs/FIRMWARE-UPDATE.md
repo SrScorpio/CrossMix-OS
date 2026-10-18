@@ -153,7 +153,46 @@ tag before assuming the image matches the version string.
 Acceptance after recovery: CrossMix theme visible, one game launches and
 returns to the menu, INFO still shows `1.1.1 / 20251128`.
 
-## 6. What this document does not authorize
+## 6. The library: what actually stalls the menu
+
+`Loading` / `cargando` after the CrossMix splash is MainUI building the game
+list. A first scan of a large library is slow, but it finishes. If it never
+finishes, the cause is not the firmware and is not the number of ROMs. Two
+things have been verified on hardware, in this order:
+
+1. **A malformed JSON at the root of `Roms/` hangs the scan forever.**
+   `Roms/favourite2.json` was present, was not valid JSON (a document
+   followed by a second document), and every boot stayed on `cargando`
+   indefinitely. Moving it out of `Roms/` made the menu load on the first
+   try. A console that hangs after someone copies files by hand should get
+   `ls Roms/*.json` and a JSON parse check before anything else.
+   `recentlist.json` in the same folder is normal and is read fine.
+2. **Volume alone did not reproduce it.** The library was restored in
+   batches. Game Boy, GBC, SNES, Master System, Mega Drive, PSX and PSP
+   scanned in seconds. The whole set was then moved in one go (110 systems,
+   ~78 GB, NES with 3 224 files) and that boot also loaded. The stall was the
+   JSON, not the size.
+
+Rules that came out of it, for anyone doing the same:
+
+- Move ROM folders only. Never move `favourite2.json`, `recentlist.json`,
+  `*.launch` or `*.m3u` into `Roms/` from a backup: they are menu state, not
+  ROMs, and a bad one blocks the launcher rather than one game.
+- `MUSIC`, `VIDEOS`, `PORTS`, `PICO` and `SCUMMVM` folders contain playlists
+  and launchers, not ROMs. They are not part of a library restore.
+- When a console has no ROM folder, MainUI creates an empty stub with only
+  `*_cache7.db`. Remove that stub before moving the real folder in, or the
+  real folder ends up nested inside it.
+- Do not delete `*_cache7.db` from a scan that already succeeded. It is the
+  difference between a fast boot and a full rescan.
+- `show.json` in `Emus/` is written by `Apps/EmuCleaner/launch.sh`. Keep a
+  copy before editing it: a hand-edited `show.json` with the wrong set of
+  `show` flags is another way to make the menu look wrong, and it was edited
+  and restored during this session. The generated file is the reference.
+- `Menu/*cache7.db` (app menus) and `Roms/*_cache7.db` (game lists) are
+  different things. Only the app-menu ones are safe to delete blindly.
+
+## 7. What this document does not authorize
 
 - A custom boot logo. That is a firmware image change and needs its own
   permission, a backup, and a recovery image.
