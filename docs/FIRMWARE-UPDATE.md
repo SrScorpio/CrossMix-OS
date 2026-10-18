@@ -95,17 +95,44 @@ Flash:
    reboot with a lower revision is therefore not "missing payload". It means
    the script did not run, or the revision parse was empty.
 
-Known gap, not yet closed: hotfix `.14`/`.15` never deployed
-`_FirmwareCheck.sh` or `MinFwVersion.txt`. An SD installed from the
-`v1.4.0-ce.2` image still runs the base script unless those files were
-copied by hand. The base script looks for
-`firmware_tsp_v1.1.0_20250505.7z.001`, which this repo does not ship. The
-`NEWEST_PAYLOAD` fallback exists on `main` and has not been shipped as a
-hotfix.
+Closed by hotfix `1.4.0-ce.2.16`: the zip ships
+`System/starts/_FirmwareCheck.sh` (with the `NEWEST_PAYLOAD` fallback) and
+`trimui/firmwares/MinFwVersion.txt` (`1.1.1` / `20251128`). Hotfix
+`.14`/`.15` never deployed those two files, so an SD installed from the
+`v1.4.0-ce.2` image kept the base script that looked for
+`firmware_tsp_v1.1.0_20250505.7z.001`. Run **Check Update** once after
+this hotfix lands on `main` so existing cards pick it up.
 
-The menu entry **System Tools → TOOLS → Firmware Update** was removed in
-#27. Reopening it is a product decision (2026-10-18) and is not in the
-image yet. Do not document it as available.
+Rebuild the zip from the tree after every rebase onto `main` (do not
+hand-edit it). The payload also carries the current OTA scripts
+(`update_notification.sh`, `update_ota_release.sh`); publishing a stale
+zip would overwrite newer comparator/error-propagation fixes on
+consoles:
+
+```sh
+sh _assets/scripts/build-hotfix-zip.sh
+```
+
+## 3b. System Tools → TOOLS → Firmware Update
+
+Restored after #27 (product decision 2026-10-18). Path:
+`Apps/SystemTools/Menu/TOOLS/Firmware Update.sh`.
+
+What it does:
+
+- Shows installed vs required firmware from `MinFwVersion.txt`.
+- Downloads and verifies the `.7z.001`/`.002` payload from the latest
+  release when missing or corrupt (~158 MB, Wi-Fi required).
+- Optionally extracts `trimui_tg5040.awimg` to the SD root.
+- Always ends on the **manual** flash steps (FAT32, awimg on root,
+  console off, **VOLUME− + POWER** until the green bar).
+
+What it does **not** do:
+
+- It does not flash the console by itself.
+- It does not claim that a reboot or the boot-time check writes the
+  image unattended. That path is still not accredited on hardware.
+  Section 2 remains the primary method.
 
 ## 4. Rollback
 
