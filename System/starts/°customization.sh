@@ -206,7 +206,12 @@ if [ "$version" != "$FW_patched_version" ]; then
             src_dir="/mnt/SDCARD/Apps/BootLogo/Images_1024x768"
         fi
 
-        "/mnt/SDCARD/Emus/_BootLogo/launch.sh" "$src_dir/- CrossMix-OS.bmp"
+        # The SE mark ships with the repo; fall back to the stock one on a card
+        # that never received it, so an old SD does not lose its logo.
+        boot_logo="$src_dir/- CrossMix-OS SE.bmp"
+        [ -f "$boot_logo" ] || boot_logo="$src_dir/- CrossMix-OS.bmp"
+
+        "/mnt/SDCARD/Emus/_BootLogo/launch.sh" "$boot_logo"
     fi
     fi
 fi
