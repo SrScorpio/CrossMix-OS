@@ -182,6 +182,16 @@ if [ "$version" != "$FW_patched_version" ]; then
         "/mnt/SDCARD/Apps/SystemTools/Menu/USER INTERFACE##START TAB (value)/Tab Game.sh" -s
     fi
 
+    # SE: the heavy first-boot work (EmuCleaner rescans the whole library, the
+    # boot-logo flash writes to the internal partition) already completed once.
+    # If the device reboots while this runs - which is exactly what it does on a
+    # fresh flash - the internal stamp does not exist yet, so the next boot
+    # repeats it, and the one after that. That is the loading loop.
+    #
+    # The flag is set *before* the work, not after: a reboot halfway through must
+    # not put us back at the start. Delete the file to force the work again.
+    if [ ! -f /mnt/SDCARD/System/updates/.skip_firstboot_heavy ]; then
+        touch /mnt/SDCARD/System/updates/.skip_firstboot_heavy 2>/dev/null || true
     # Displaying only Emulators with roms
     /mnt/SDCARD/Apps/EmuCleaner/launch.sh -s
 
@@ -197,6 +207,7 @@ if [ "$version" != "$FW_patched_version" ]; then
         fi
 
         "/mnt/SDCARD/Emus/_BootLogo/launch.sh" "$src_dir/- CrossMix-OS.bmp"
+    fi
     fi
 fi
 

@@ -245,3 +245,26 @@ Rules that came out of it, for anyone doing the same:
 - Treating a merged PR as a console that has been updated. A hotfix is the
   only channel that reaches an existing SD, and only for files the hotfix
   actually ships.
+
+## 8. The boot chain: what runs once, and the splash
+
+Two things in `System/starts/°customization.sh` decide what a boot looks like.
+
+**The heavy first-boot block.** EmuCleaner rescans the whole library and the
+boot-logo flash writes to the internal partition. Both used to run on every
+boot in which the internal stamp was absent, and the device reboots in the
+middle of the work — so the stamp never appeared and the loop never ended. It
+now runs behind `System/updates/.skip_firstboot_heavy`, and the flag is
+created **before** the work starts, not after: a reboot halfway through must
+not put the device back at the beginning. Delete the flag to force the block
+to run again.
+
+**The splash text.** Rendered by `infoscreen.sh` as `$Brand_Name v$version`,
+where `Brand_Name` is `CrossMix-OS SE` and `version` is read verbatim from
+`System/usr/trimui/crossmix-version.txt`. The version is a functional key
+(the OTA comparator, the release manifest and the hotfix channel all use it),
+so it is never reformatted or renamed: `CrossMix-OS SE v1.4.0-ce.2` is the
+correct, complete string. Seeing `ce` there is not a failed update.
+
+Both live in a file the OTA chain only replaces from `.18` onwards. Before
+that, the console keeps its own copy, whatever the repository says.
