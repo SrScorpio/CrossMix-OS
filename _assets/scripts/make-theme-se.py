@@ -16,6 +16,7 @@ Run: python3 _assets/scripts/make-theme-se.py
 """
 
 import json
+import math
 import shutil
 from pathlib import Path
 
@@ -99,46 +100,80 @@ def build_nav_logo():
 
 
 def mark_layer(size, opacity):
-    """The SE mark, trimmed and scaled to sit as a watermark."""
+    """The SE mark as a transparent watermark.
+
+    The source is a flat #0F1014 square. Pasting it as-is leaves a visible
+    lighter rectangle floating over the background - which is exactly what the
+    first version looked like. The alpha is rebuilt from the difference against
+    that flat colour, so only the mark survives.
+    """
     art = Image.open(LOGO).convert("RGB")
-    # Upper part only: the scorpion inside its shield, without the wordmark.
     art = art.crop((0, 0, art.size[0], int(art.size[1] * 0.62)))
 
     flat = Image.new("RGB", art.size, art.getpixel((0, 0)))
-    diff = ImageChops.difference(art, flat).convert("L").point(lambda v: 255 if v > 8 else 0)
-    box = diff.getbbox()
+    diff = ImageChops.difference(art, flat).convert("L")
+
+    box = diff.point(lambda v: 255 if v > 8 else 0).getbbox()
     if box:
         art = art.crop(box)
+        diff = diff.crop(box)
+
+    art = art.convert("RGBA")
+    art.putalpha(diff.point(lambda v: min(255, int(v * 3.2))))
 
     h = int(size[1] * 0.62)
     art = art.resize((int(art.size[0] * h / art.size[1]), h), Image.Resampling.LANCZOS)
 
     layer = Image.new("RGBA", size, (0, 0, 0, 0))
-    layer.paste(art.convert("RGBA"), ((size[0] - art.size[0]) // 2,
-                                      (size[1] - art.size[1]) // 2))
-    alpha = layer.split()[3].point(lambda a: int(a * opacity))
-    layer.putalpha(alpha)
+    layer.paste(art, ((size[0] - art.size[0]) // 2, (size[1] - art.size[1]) // 2))
+    layer.putalpha(layer.split()[3].point(lambda a: int(a * opacity)))
     return layer
 
 
-def build_bg(mark_opacity=0.22):
-    bg = recolor(Image.open(BASE / "skin" / "bg.png").convert("RGB"))
+def build_bg(mark_opacity=0.26):
+    """A background built from scratch.
 
-    # push the neutrals darker and neutral: the stock file is a blue-grey map
-    arr = np.asarray(bg).astype(np.float32)
-    grey = arr.mean(axis=2, keepdims=True)
-    arr = np.clip(arr * 0.55 + grey * 0.45 * 0.85, 0, 255)
-    bg = Image.fromarray(arr.astype(np.uint8))
+    The stock bg.png carries its own emblem baked into the bitmap - a cross
+    inside a diamond, with the word CROSSHAIR. Recolouring it and dropping the
+    scorpion on top leaves two marks fighting in the same place, which is what it
+    looked like. Nothing of that file survives here: black plate, one red glow,
+    a hexagonal texture that is already part of the identity, and the mark.
+    """
+    size = (1280, 720)
+    img = Image.new("RGB", size, BLACK)
 
-    # vignette so the icon grid keeps the contrast it needs
-    vig = Image.new("L", bg.size, 0)
-    ImageDraw.Draw(vig).ellipse([-bg.size[0] * 0.25, -bg.size[1] * 0.3,
-                                 bg.size[0] * 1.25, bg.size[1] * 1.3], fill=255)
-    vig = vig.filter(ImageFilter.GaussianBlur(120))
-    bg = Image.composite(bg, Image.new("RGB", bg.size, BLACK), vig)
+    glow = Image.new("RGB", size, (0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    for r, a in ((560, 30), (380, 48), (230, 68)):
+        gd.ellipse([640 - r, 360 - r * 0.62, 640 + r, 360 + r * 0.62],
+                   fill=(a, int(a * 0.12), int(a * 0.14)))
+    img = ImageChops.add(img, glow.filter(ImageFilter.GaussianBlur(120)))
 
-    bg = Image.alpha_composite(bg.convert("RGBA"), mark_layer(bg.size, mark_opacity))
-    return bg.convert("RGB")
+    # hexagonal lattice, faded towards the top so the icon rows keep contrast
+    hexl = Image.new("RGBA", size, (0, 0, 0, 0))
+    hd = ImageDraw.Draw(hexl)
+    step, rad = 66, 27
+    for row, y in enumerate(range(-40, 780, 57)):
+        for x in range(-40, 1340, step):
+            ox = step // 2 if row % 2 else 0
+            pts = [(x + ox + rad * math.cos(math.radians(a)),
+                    y + rad * math.sin(math.radians(a))) for a in range(0, 360, 60)]
+            hd.line(pts + [pts[0]], fill=RED + (20,), width=2)
+
+    fade = np.linspace(0.0, 1.0, size[1]).reshape(-1, 1)
+    fade = np.repeat(fade, size[0], axis=1)
+    alpha = np.asarray(hexl.split()[3]).astype(np.float32) * fade
+    hexl.putalpha(Image.fromarray(alpha.astype(np.uint8)))
+    img = Image.alpha_composite(img.convert("RGBA"), hexl).convert("RGB")
+
+    vig = Image.new("L", size, 0)
+    ImageDraw.Draw(vig).ellipse([-size[0] * 0.25, -size[1] * 0.3,
+                                 size[0] * 1.25, size[1] * 1.3], fill=255)
+    vig = vig.filter(ImageFilter.GaussianBlur(130))
+    img = Image.composite(img, Image.new("RGB", size, BLACK), vig)
+
+    img = Image.alpha_composite(img.convert("RGBA"), mark_layer(size, mark_opacity))
+    return img.convert("RGB")
 
 
 def build_shutdown():

@@ -269,7 +269,7 @@ What changed:
 
 | Asset | Change |
 |---|---|
-| `skin/bg.png` | teal shifted to Ember Red, neutrals pushed darker, SE mark watermarked at 22% |
+| `skin/bg.png` | rebuilt: black plate, one red glow, hexagonal lattice, SE mark as a transparent watermark. Nothing of the stock bitmap survives — it carried its own emblem and two marks in one place looked wrong |
 | `skin/shutdown.png` | teal shifted to red; the old wordmark in the corner replaced by a bordered `CROSSMIX-OS SE` badge |
 | `skin/nav-logo.png` | regenerated at 218x40 — `CROSSMIX-OS` in Bone Cream plus the diamond mark, instead of a recoloured 40px bitmap |
 | `skin/icon-back.png`, `skin/progress-dot1-4.png` | rebuilt from luminance in Ember Red |
@@ -289,6 +289,8 @@ Reaching it from the console takes two files besides the folder:
   `theme` and `bootlogo` from those variables — **not** from the theme's
   `config.json`, which is why no `bootlogo` key is written there.
 
-Regenerate with `python3 _assets/scripts/make-theme-se.py`. Recolouring by hue
-shift leaves a teal fringe on antialiased 40px assets; the small ones are rebuilt
-from luminance instead, which is what makes them clean.
+Regenerate with `python3 _assets/scripts/make-theme-se.py`. Two traps found the
+hard way: a hue shift leaves a teal fringe on antialiased 40px assets (they are
+rebuilt from luminance instead), and the SE mark is a flat `#0F1014` square that
+shows as a floating rectangle unless its alpha is rebuilt from the difference
+against that colour.
