@@ -190,14 +190,34 @@ def build_shutdown():
 
 
 def build_preview():
-    """512x288, the shape the theme picker shows."""
-    bg = build_bg(mark_opacity=0.45).resize((512, 288), Image.Resampling.LANCZOS)
+    """512x288, the shape the theme picker shows.
+
+    The caption block is measured and placed from the bottom up: an earlier
+    version hard-coded the offsets and SCORPIO EDITION ended up clipped by the
+    frame edge.
+    """
+    W_, H_ = 512, 288
+    bg = build_bg(mark_opacity=0.45).resize((W_, H_), Image.Resampling.LANCZOS)
     d = ImageDraw.Draw(bg)
-    d.rectangle([0, 288 - 46, 512, 288], fill=(0, 0, 0, 130))
-    f = ImageFont.truetype(FONT, 22)
-    d.text((16, 288 - 34), "CROSSMIX-OS", font=f, fill=CREAM)
-    f2 = ImageFont.truetype(FONT, 13)
-    d.text((16, 288 - 12), "SCORPIO EDITION", font=f2, fill=RED)
+
+    f_title = ImageFont.truetype(FONT, 22)
+    f_sub = ImageFont.truetype(FONT, 13)
+
+    tb = d.textbbox((0, 0), "CROSSMIX-OS", font=f_title)
+    sb = d.textbbox((0, 0), "SCORPIO EDITION", font=f_sub)
+    title_h = tb[3] - tb[1]
+    sub_h = sb[3] - sb[1]
+
+    margin = 20            # gap below the last line
+    gap = 7                # gap between the two lines
+    sub_y = H_ - margin - sub_h
+    title_y = sub_y - gap - title_h
+
+    bar_top = title_y - 12
+    d.rectangle([0, bar_top, W_, H_], fill=(6, 6, 9))
+
+    d.text((16, title_y - tb[1]), "CROSSMIX-OS", font=f_title, fill=CREAM)
+    d.text((16, sub_y - sb[1]), "SCORPIO EDITION", font=f_sub, fill=RED)
     return bg
 
 
