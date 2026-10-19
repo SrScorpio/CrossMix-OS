@@ -1,0 +1,50 @@
+name: QA
+
+# The only other workflow fires on v* tags, so nothing checked a pull request
+# before this one existed: the release-asset defect in #43 and the two `if -f`
+# tests were merged and only caught by hand afterwards. This runs the off-device
+# harness on every change.
+#
+# It is not a substitute for the console. It proves the scripts parse, the OTA
+# version contract holds, the hotfix zip matches the tree byte for byte, and the
+# favourites guard repairs without breaking a healthy file. It cannot prove that
+# a device boots. See docs/QA-COVERAGE.md.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  harness:
+    name: Off-device harness (--strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Every dependency the harness declares: busybox for the target shell
+      # (sh -n and the comparator matrix), dash as the second shell, p7zip for
+      # the payload, jq for the JSON contract, zip/unzip for the hotfix.
+      - name: Install harness dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq busybox-static dash p7zip-full jq zip unzip
+          busybox | head -1
+          dash -c 'echo dash ok'
+          7z | head -2
+
+      - name: Run harness
+        run: sh scripts/qa/run.sh --strict
+
+      - name: Upload harness log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-log
+          path: |
+            /tmp/qa-*
+          if-no-files-found: ignore
