@@ -1,5 +1,5 @@
 #!/bin/sh
-# CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.16
+# CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.17
 # Channel: served by ota_update.sh when releases/latest has nothing newer.
 # Fixes:
 #  - crossmix-version.txt pinned to 1.4.0-ce.2 (legacy upstream hotfixes
@@ -16,9 +16,9 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.16"
-Remote_HotfixDate="2026-10-18"
-Remote_HotfixDesc="- Deploy _FirmwareCheck.sh + MinFwVersion.txt to existing SDs; restore TOOLS/Firmware Update (download/check + VOL-+POWER manual flash; no auto-flash claim) (#5)"
+Remote_HotfixVersion="1.4.0-ce.2.17"
+Remote_HotfixDate="2026-10-19"
+Remote_HotfixDesc="- Net timeouts on every OTA download so a dead connection reports an error instead of freezing the menu; refreshes the OTA script chain (#5 follow-up)"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
