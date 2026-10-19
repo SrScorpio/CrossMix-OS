@@ -15,6 +15,8 @@
 #   System/usr/trimui/scripts/update_common.sh
 #   System/usr/trimui/scripts/update_notification.sh
 #   System/usr/trimui/scripts/update_ota_release.sh
+#   System/usr/trimui/scripts/favorites_guard.sh
+#   System/starts/°customization.sh
 #   trimui/firmwares/MinFwVersion.txt
 #
 # Usage: sh _assets/scripts/build-hotfix-zip.sh
@@ -37,6 +39,8 @@ System/usr/trimui/scripts/ota_update.sh
 System/usr/trimui/scripts/update_common.sh
 System/usr/trimui/scripts/update_notification.sh
 System/usr/trimui/scripts/update_ota_release.sh
+System/usr/trimui/scripts/favorites_guard.sh
+System/starts/°customization.sh
 trimui/firmwares/MinFwVersion.txt
 "
 

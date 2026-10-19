@@ -1,5 +1,5 @@
 #!/bin/sh
-# CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.17
+# CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.18
 # Channel: served by ota_update.sh when releases/latest has nothing newer.
 # Fixes:
 #  - crossmix-version.txt pinned to 1.4.0-ce.2 (legacy upstream hotfixes
@@ -16,9 +16,9 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.17"
+Remote_HotfixVersion="1.4.0-ce.2.18"
 Remote_HotfixDate="2026-10-19"
-Remote_HotfixDesc="- Net timeouts on every OTA download so a dead connection reports an error instead of freezing the menu; refreshes the OTA script chain (#5 follow-up)"
+Remote_HotfixDesc="- Splash shows CrossMix-OS SE; the heavy first-boot block (EmuCleaner + boot logo) runs once and marks itself before working, so a reboot cannot restart the loading loop; ships favorites_guard.sh"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
@@ -73,6 +73,8 @@ main() {
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_ota_release.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/update_notification.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Update.sh" 2>/dev/null
+    chmod a+x "/mnt/SDCARD/System/starts/°customization.sh" 2>/dev/null
+    chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/favorites_guard.sh" 2>/dev/null
 
     # retire obsolete debug/download-only entries; keep Firmware Update.sh
     rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Download.sh"
