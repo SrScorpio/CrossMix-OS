@@ -239,8 +239,12 @@ git diff --stat
    hotfix/release (with a version bump, otherwise already-updated consoles skip
    it by the `.16` gate). It was not regenerated here on purpose: this change set
    is text-only and does not rebuild release artifacts.
-2. **Boot logo** returns to stock after a firmware flash and needs its own `awimg`
-   plus owner permission (§4.2).
+2. ~~**Boot logo** returns to stock after a firmware flash and needs its own
+   `awimg` plus owner permission (§4.2).~~ **Resolved, and the premise was
+   wrong.** No custom `awimg` is needed: `Apps/BootLogo` flashes a `.bmp` into the
+   boot partition at runtime (`Emus/_BootLogo/launch.sh`), and the SE mark is
+   generated from `_assets/readme/logo-se.png` by
+   `_assets/scripts/make-bootlogo.py`. See `docs/BOOTLOGO.md`.
 3. **Two README assets are JPEGs with a `.png` extension**
    (`_assets/readme/logo-se.png`, `_assets/readme/banner-se.png`; confirmed with
    `file`). They render on GitHub, but they are mislabelled. Fixing it means
@@ -251,3 +255,40 @@ git diff --stat
    *Introduction* body. That text is cizia64's and is kept verbatim for
    attribution; the fork identifies itself in the header, the badge line and this
    document.
+
+## 7. The SE theme
+
+`Themes/CrossMix - OS SE` is a copy of the stock theme with the accent moved from
+teal to Ember Red. It is a copy and not a rename on purpose: several firmware
+scripts hard-code `/mnt/SDCARD/Themes/CrossMix - OS/wqy-microhei.ttf` to draw the
+firmware-update screens (`_FirmwareCheck.sh`, `infoscreen2.sh`). Renaming or
+removing the stock theme breaks those screens, so the stock folder stays exactly
+where it is and the SE one sits beside it.
+
+What changed:
+
+| Asset | Change |
+|---|---|
+| `skin/bg.png` | teal shifted to Ember Red, neutrals pushed darker, SE mark watermarked at 22% |
+| `skin/shutdown.png` | teal shifted to red; the old wordmark in the corner replaced by a bordered `CROSSMIX-OS SE` badge |
+| `skin/nav-logo.png` | regenerated at 218x40 — `CROSSMIX-OS` in Bone Cream plus the diamond mark, instead of a recoloured 40px bitmap |
+| `skin/icon-back.png`, `skin/progress-dot1-4.png` | rebuilt from luminance in Ember Red |
+| `config.json` | `name` = `CrossMix - OS SE`, `content_color2` = `#E6EC273B`, nav greys warmed |
+
+What did **not** change: the rest of the skin is already neutral grey, so it
+needs no recolouring; icons, sounds and fonts are untouched. The theme carries
+its own copy of `wqy-microhei.ttf` (5 of its 6.7 MB) because a theme folder
+without its font fails to render.
+
+Reaching it from the console takes two files besides the folder:
+
+- `Apps/SystemTools/Menu/ADVANCED SETTINGS##THEMES (value)/CrossMix - OS SE.sh`
+  applies the theme alone.
+- `Apps/SystemTools/Menu/THEME##THEME PACK (value)/CrossMix - OS SE.sh` is the
+  pack: theme + boot logo + icon set in one action. `themepack_apply.sh` reads
+  `theme` and `bootlogo` from those variables — **not** from the theme's
+  `config.json`, which is why no `bootlogo` key is written there.
+
+Regenerate with `python3 _assets/scripts/make-theme-se.py`. Recolouring by hue
+shift leaves a teal fringe on antialiased 40px assets; the small ones are rebuilt
+from luminance instead, which is what makes them clean.
