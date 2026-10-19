@@ -16,9 +16,9 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.18"
+Remote_HotfixVersion="1.4.0-ce.2.19"
 Remote_HotfixDate="2026-10-19"
-Remote_HotfixDesc="- Splash shows CrossMix-OS SE; the heavy first-boot block (EmuCleaner + boot logo) runs once and marks itself before working, so a reboot cannot restart the loading loop; ships favorites_guard.sh"
+Remote_HotfixDesc="- The boot logo flashed on first boot is now the SE mark, with a fallback to the stock one on cards that lack it; splash already shows CrossMix-OS SE"
 
 hotfix_fileUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/_assets/hotfixes/CrossMix-OS_v1.4.0-ce.2.zip"
 local_hotfix_file="/mnt/SDCARD/System/usr/trimui/crossmix-hotfix-version.txt"
