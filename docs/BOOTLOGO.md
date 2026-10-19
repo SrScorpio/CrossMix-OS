@@ -48,21 +48,24 @@ uses it today; the hook exists and works.
 
 ## The SE marks
 
-`_assets/scripts/make-bootlogo.py` draws them (PIL, 2x supersampled, 24bpp,
-2,64 MiB each):
+The mark is not drawn here. It already exists in `_assets/readme/logo-se.png`
+(scorpion inside a hexagonal shield, wordmark, SCORPIO EDITION) and
+`docs/BRANDING.md` fixes the palette — Scorpio Black `#0F1014`, which is also the
+fill the artwork sits on. `_assets/scripts/make-bootlogo.py` only trims that
+artwork, scales it and centres it on the console's canvas, so the boot screen
+cannot drift away from the rest of the brand. Same input, same bytes.
 
 | File | What it is |
 |---|---|
-| `- CrossMix-OS SE.bmp` | frame, cut-free X, wordmark and SE tag — the default |
-| `- CrossMix-OS SE Wordmark.bmp` | typography only, no frame |
-| `- CrossMix-OS SE Scorpio.bmp` | side-view scorpion inside the frame |
+| `- CrossMix-OS SE.bmp` | the mark at 86% height — **the default** |
+| `- CrossMix-OS SE Full.bmp` | 97%, for panels that crop a few pixels |
+| `- CrossMix-OS SE Minimal.bmp` | 72%, more black around it |
 
-Regenerate with `python3 _assets/scripts/make-bootlogo.py`; same input, same
-bytes. The script refuses to write a file over the 6 MB the flasher enforces.
+Regenerate with `python3 _assets/scripts/make-bootlogo.py`; the script refuses to
+write a file over the 6 MB the flasher enforces.
 
-Design notes that came out of rendering these on a 1280x720 frame: no text
-below ~18px at 1x, one accent and one focal point, and the badge as an outline
-rather than a solid block, or it competes with the mark.
+To change the mark itself, replace `_assets/readme/logo-se.png` and regenerate —
+not the `.bmp` files, or the next regeneration silently reverts the change.
 
 ## Reverting
 
