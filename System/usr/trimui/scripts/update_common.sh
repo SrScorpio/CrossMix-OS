@@ -57,6 +57,14 @@ NC='\033[0m' # No Color
 
 GITHUB_REPOSITORY=SrScorpio/CrossMix-OS-SE
 updatedir="/mnt/SDCARD/System/updates"
+
+# Network timeouts (GH#44 follow-up). A curl call with no --max-time waits
+# forever on a dead connection, and the UI that spawned the update waits with
+# it: the menu freezes instead of reporting an error. Overridable for tests.
+OTA_WGET_TIMEOUT="${OTA_WGET_TIMEOUT:-30}"
+OTA_CURL_CONNECT_TIMEOUT="${OTA_CURL_CONNECT_TIMEOUT:-15}"
+OTA_CURL_MAX_TIME="${OTA_CURL_MAX_TIME:-900}"
+OTA_CURL_API_MAX_TIME="${OTA_CURL_API_MAX_TIME:-30}"
 Local_CrossMixVersion="$(cat "/mnt/SDCARD/System/usr/trimui/crossmix-version.txt")"
 current_date=$(date "+%Y-%m-%d")
 timestamp=$(date +'%Y%m%d-%Hh%M')
@@ -324,7 +332,11 @@ download_file() {
 
     # Download the file
     echo -e "\n${BLUE}==== Downloading: $display_name ====${NC}"
-    wget --no-check-certificate --quiet --show-progress -O "$temp_file" "$url"
+    # Timeouts, always. A stalled connection used to keep this process alive with
+    # no output for minutes; the UI that launched the update waits on it, so the
+    # menu froze with the icons on screen and never came back. -T is the socket
+    # timeout and -t the retry count, both understood by GNU wget and busybox.
+    wget --no-check-certificate --quiet --show-progress -T "${OTA_WGET_TIMEOUT:-30}" -t 2 -O "$temp_file" "$url"
     if [ $? -eq 0 ] && [ -f "$temp_file" ]; then
         mv "$temp_file" "$destination_file"
         sync

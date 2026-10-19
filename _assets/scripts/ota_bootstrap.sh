@@ -14,7 +14,7 @@ currentUpdatePack=$("$CommonUpdateScript" -v)
 
 GITHUB_REPOSITORY=SrScorpio/CrossMix-OS-SE
 UpdatePackUrl="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/System/usr/trimui/scripts/update_common.sh"
-wget --no-check-certificate --quiet --show-progress -O "/tmp/update_common.sh" "$UpdatePackUrl"
+wget --no-check-certificate --quiet --show-progress -T 30 -t 2 -O "/tmp/update_common.sh" "$UpdatePackUrl"
 chmod +x "/tmp/update_common.sh"
 onlineUpdatePack=$("/tmp/update_common.sh" -v)
 

@@ -83,7 +83,7 @@ get_release_info() {
 
     # Github source api url
 
-    Release_assets_info=$(curl -k -s -L https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest)
+    Release_assets_info=$(curl -k -s -L --connect-timeout "${OTA_CURL_CONNECT_TIMEOUT:-15}" --max-time "${OTA_CURL_API_MAX_TIME:-30}" https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest)
     if [ $? -ne 0 ] || [ -z "$Release_assets_info" ]; then
         echo -e "${RED}FAIL${NC}\nCould not reach the GitHub release API."
         return "$OTA_EXIT_DOWNLOAD"
