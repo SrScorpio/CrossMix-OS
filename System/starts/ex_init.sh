@@ -53,14 +53,18 @@ if [[ "$NETWORK_SSH" == "Y" ]]; then
         chmod 600 /root/.ssh/authorized_keys 2>/dev/null
     fi
 
-    nice -2 dropbear -r "$KEYDIR/dropbear_ed25519_host_key" -p 22 2>>"$SSHLOG" &
-    sleep 3
-    {
-        echo "--- started $(date) ---"
-        ps | grep -v grep | grep dropbear || echo "dropbear: not running"
-        netstat -ln 2>/dev/null | grep ':22' || echo "nothing listening on :22"
-        echo "keydir=$KEYDIR"
-    } >> "$SSHLOG"
+    # The firmware's own switch and this script can both start a server; a
+    # second dropbear fails to bind and lingers. Only start one.
+    if ! ps | grep -v grep | grep -q "[d]ropbear"; then
+        nice -2 dropbear -r "$KEYDIR/dropbear_ed25519_host_key" -p 22 2>>"$SSHLOG" &
+        sleep 3
+        {
+            echo "--- started $(date) ---"
+            ps | grep -v grep | grep "[d]ropbear" || echo "dropbear: not running"
+            netstat -ln 2>/dev/null | grep ':22' || echo "nothing listening on :22"
+            echo "keydir=$KEYDIR"
+        } >> "$SSHLOG"
+    fi
 fi
 
 if [[ "$NETWORK_SFTPGO" == "Y" ]]; then
