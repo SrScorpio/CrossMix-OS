@@ -3,6 +3,10 @@
 PATH="/mnt/SDCARD/System/bin:$PATH"
 export LD_LIBRARY_PATH="/mnt/SDCARD/System/lib:/mnt/SDCARD/System/lib/samba:/mnt/SDCARD/Apps/PortMaster/PortMaster:/usr/trimui/lib:$LD_LIBRARY_PATH"
 
+# Storage latency first, before anything scans or writes: the kernel boots with
+# CFQ on the SD card, which is the wrong scheduler for this workload.
+[ -x /mnt/SDCARD/System/usr/trimui/scripts/io_scheduler.sh ] && /mnt/SDCARD/System/usr/trimui/scripts/io_scheduler.sh >/dev/null 2>&1 &
+
 eval $(
 	/mnt/SDCARD/System/bin/jq -r '
         @sh "
