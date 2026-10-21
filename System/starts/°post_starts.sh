@@ -126,7 +126,9 @@ if [ "$SWAP_AB_enabled" -eq 1 ]; then
 fi
 
 if [ "$TELNET_enabled" -eq 1 ]; then
-	telnetd &
+	# Retired: this started telnetd as root with no authentication at all, on
+	# 0.0.0.0. Leaving it listening would undo every other hardening step.
+	echo "telnetd: disabled (unauthenticated remote root)" >&2
 fi
 
 if [ "$Syncthing_enabled" -eq 1 ]; then
