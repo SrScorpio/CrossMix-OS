@@ -71,14 +71,23 @@ if [ -z "$governor" ]; then
 	exit 0
 fi
 
-# Validate frequency settings
-if [ "$governor" != "interactive" ] && [ "$governor" != "ondemand" ] && [ "$governor" != "performance" ] && [ "$governor" != "powersave" ] && [ "$governor" != "conservative" ]; then
-	echo "cpufreq.sh: Invalid governor."
-	exit 1
-elif [ $min_id -lt 0 ] || [ $min_id -gt 8 ]; then
+# Validate against what the kernel actually offers instead of a hard-coded list.
+# The SoC exposes schedutil and the OSD offers it, but the old whitelist rejected
+# it: the call failed, the previous governor stayed, and nothing said so.
+available_governors=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors 2>/dev/null)
+case " $available_governors " in
+	*" $governor "*)
+		;;
+	*)
+		echo "cpufreq.sh: Invalid governor '$governor'. Available: $available_governors"
+		exit 1
+		;;
+esac
+
+if [ "$min_id" -lt 0 ] || [ "$min_id" -gt 8 ]; then
 	echo "cpufreq.sh: Invalid min frequency ID."
 	exit 1
-elif [ $max_id -lt $min_id ] || [ $max_id -gt 8 ]; then
+elif [ "$max_id" -lt "$min_id" ] || [ "$max_id" -gt 8 ]; then
 	echo "cpufreq.sh: Invalid max frequency ID."
 	exit 1
 fi
@@ -97,15 +106,23 @@ max_freq=$(id_to_freq $max_id)
 
 echo "Setting CPU frequency to $governor, $min_freq - $max_freq kHz."
 
-# Apply frequency settings
-echo $governor >/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-if [ $min_freq -gt "$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq)" ]; then
-	echo $max_freq >/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-	echo $min_freq >/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
-else
-	echo $min_freq >/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
-	echo $max_freq >/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-fi
+# Apply to every cpufreq policy, not just cpu0: the kernel may expose one policy
+# per cluster, and writing cpu0 only leaves the others on the old governor.
+for policy in /sys/devices/system/cpu/cpu[0-9]*/cpufreq; do
+	[ -d "$policy" ] || continue
+
+	echo "$governor" > "$policy/scaling_governor" 2>/dev/null
+
+	# Order matters: raise max before min, lower min before max, or the kernel
+	# rejects the write that would leave min > max.
+	if [ "$min_freq" -gt "$(cat "$policy/scaling_max_freq" 2>/dev/null || echo 0)" ]; then
+		echo "$max_freq" > "$policy/scaling_max_freq" 2>/dev/null
+		echo "$min_freq" > "$policy/scaling_min_freq" 2>/dev/null
+	else
+		echo "$min_freq" > "$policy/scaling_min_freq" 2>/dev/null
+		echo "$max_freq" > "$policy/scaling_max_freq" 2>/dev/null
+	fi
+done
 
 # Optionally set number of active CPU cores
 if [ -n "$active_cores" ]; then
