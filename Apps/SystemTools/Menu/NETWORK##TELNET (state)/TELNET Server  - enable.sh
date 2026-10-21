@@ -1,25 +1,13 @@
 #!/bin/sh
-PATH="/mnt/SDCARD/System/bin:$PATH"
-export LD_LIBRARY_PATH="/mnt/SDCARD/System/lib:/usr/trimui/lib:$LD_LIBRARY_PATH"
+# Telnet used to start here as root with no authentication and no encryption:
+# anyone on the LAN could open port 23 and own the console. It is retired.
+#
+# SSH is the supported remote shell and runs with key authentication only
+# (see ssh_start.sh). If telnet is ever needed for debugging, it must be a
+# deliberate, documented change that requires a login - not a menu toggle.
 
-/mnt/SDCARD/System/usr/trimui/scripts/infoscreen.sh -m "Applying \"$(basename "$0" .sh)\" by default..."
+/mnt/SDCARD/System/usr/trimui/scripts/infoscreen.sh \
+    -m "Telnet disabled: it ran as root without authentication. Use SSH." -c red -t 4
 
-json_file="/mnt/SDCARD/System/etc/crossmix.json"
-
-if [ ! -f "$json_file" ]; then
-  echo "{}" >"$json_file"
-fi
-
-/mnt/SDCARD/System/bin/jq '. += {"TELNET": 1}' "$json_file" >"/tmp/json_file.tmp" && mv "/tmp/json_file.tmp" "$json_file"
-
-pkill telnetd
-telnetd
-
-# we modify the DB entries to reflect the current state
-/mnt/SDCARD/System/usr/trimui/scripts/mainui_state_update.sh "TELNET" "enabled"
-
-sleep 1
-IP=$(ip route get 1 2>/dev/null | awk '{print $NF;exit}')
-echo "TELNET server IP: $IP"
-
-/mnt/SDCARD/System/usr/trimui/scripts/infoscreen.sh -m "TELNET server IP: $IP" -t 4
+/mnt/SDCARD/System/usr/trimui/scripts/mainui_state_update.sh "TELNET" "disabled"
+exit 1
