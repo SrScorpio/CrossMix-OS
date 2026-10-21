@@ -29,43 +29,9 @@ fi
 
 /mnt/SDCARD/System/bin/ex_update.sh
 
-if [[ "$NETWORK_SSH" == "Y" ]]; then
-    # dropbear needs the card's libraries. ex_init never exported them (the
-    # menu's enable script does), so the server died before binding. Host keys
-    # fall back to /tmp when /etc is read-only, and authorized_keys is fetched
-    # from the card. The log is the only way to see the failure without a shell.
-    export PATH="/mnt/SDCARD/System/bin:$PATH"
-    export LD_LIBRARY_PATH="/mnt/SDCARD/System/lib:/usr/trimui/lib:$LD_LIBRARY_PATH"
-
-    SSHLOG="/mnt/SDCARD/System/updates/ssh-diag.log"
-
-    KEYDIR="/etc/dropbear"
-    [ -w /etc ] || KEYDIR="/tmp/dropbear"
-    mkdir -p "$KEYDIR" /root/.ssh
-
-    if [ ! -f "$KEYDIR/dropbear_ed25519_host_key" ]; then
-        dropbearkey -t ed25519 -f "$KEYDIR/dropbear_ed25519_host_key" >/dev/null 2>>"$SSHLOG"
-    fi
-
-    if [ -f /mnt/SDCARD/System/etc/dropbear/authorized_keys ]; then
-        cp /mnt/SDCARD/System/etc/dropbear/authorized_keys /root/.ssh/authorized_keys 2>>"$SSHLOG"
-        chmod 700 /root/.ssh 2>/dev/null
-        chmod 600 /root/.ssh/authorized_keys 2>/dev/null
-    fi
-
-    # The firmware's own switch and this script can both start a server; a
-    # second dropbear fails to bind and lingers. Only start one.
-    if ! ps | grep -v grep | grep -q "[d]ropbear"; then
-        nice -2 dropbear -r "$KEYDIR/dropbear_ed25519_host_key" -p 22 2>>"$SSHLOG" &
-        sleep 3
-        {
-            echo "--- started $(date) ---"
-            ps | grep -v grep | grep "[d]ropbear" || echo "dropbear: not running"
-            netstat -ln 2>/dev/null | grep ':22' || echo "nothing listening on :22"
-            echo "keydir=$KEYDIR"
-        } >> "$SSHLOG"
-    fi
-fi
+# dropbear lives in its own helper: it is also called from °customization.sh
+# because the firmware does not always run ex_init on a real boot.
+/mnt/SDCARD/System/usr/trimui/scripts/ssh_start.sh
 
 if [[ "$NETWORK_SFTPGO" == "Y" ]]; then
     mkdir -p /opt/sftpgo
