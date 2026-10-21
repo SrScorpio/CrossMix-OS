@@ -44,6 +44,10 @@ System/usr/trimui/scripts/favorites_guard.sh
 System/usr/trimui/scripts/ssh_start.sh
 System/starts/°customization.sh
 trimui/firmwares/MinFwVersion.txt
+System/starts/°post_starts.sh
+System/usr/trimui/scripts/cpufreq.sh
+System/usr/trimui/scripts/io_scheduler.sh
+Apps/SystemTools/Menu/NETWORK##TELNET (state)/TELNET Server  - enable.sh
 "
 
 missing=0
