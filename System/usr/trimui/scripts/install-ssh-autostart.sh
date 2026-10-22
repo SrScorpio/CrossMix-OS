@@ -31,7 +31,7 @@ if [ -x "$HELPER" ]; then
 	chmod +x /etc/ssh_start.sh 2>/dev/null
 fi
 
-grep -q "/etc/ssh_start.sh" "$RC" && exit 0
+grep -q "setsid /etc/ssh_start.sh" "$RC" && exit 0
 
 cp -f "$RC" "$RC.bak-se" 2>/dev/null
 
@@ -53,7 +53,7 @@ cat >> "$TMP" <<'EOF'
 # CrossMix-OS SE: reached from /etc/init.d/done (S95done) -> sh /etc/rc.local
 # Beacon first: proves init got here even when SSH does not come up.
 echo "rc.local ran $(date); sdcard=$(mount | grep -c SDCARD)" >> /tmp/rc-beacon.log
-[ -x /etc/ssh_start.sh ] && /etc/ssh_start.sh >> /tmp/rc-beacon.log 2>&1 &
+setsid /etc/ssh_start.sh >> /tmp/rc-beacon.log 2>&1 &
 EOF
 
 if [ -n "$LINE" ]; then
