@@ -2,6 +2,8 @@
 # CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.20
 # Channel: served by ota_update.sh when releases/latest has nothing newer.
 # Fixes:
+#  - ssh autostart via /etc/rc.local: ex_init and °customization are NOT run by
+#    this firmware, /etc/init.d/sshd is the OpenSSH one (dead path)
 #  - ssh_start: pidof+lock instead of ps (busybox ps cannot see the server, so
 #    the guard never matched and the surviving dropbear accepted passwords)
 #  - telnetd no longer starts as unauthenticated root (#66)
@@ -23,7 +25,7 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.22"
+Remote_HotfixVersion="1.4.0-ce.2.23"
 Remote_HotfixDate="2026-10-19"
 Remote_HotfixDesc="- The boot logo flashed on first boot is now the SE mark, with a fallback to the stock one on cards that lack it; splash already shows CrossMix-OS SE"
 
@@ -87,6 +89,13 @@ main() {
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/cpufreq.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/io_scheduler.sh" 2>/dev/null
     chmod a+x "/mnt/SDCARD/Apps/SystemTools/Menu/NETWORK##TELNET (state)/TELNET Server  - enable.sh" 2>/dev/null
+    chmod a+x "/mnt/SDCARD/System/usr/trimui/scripts/install-ssh-autostart.sh" 2>/dev/null
+
+# SSH on every boot: rc.local is the only init hook this firmware runs reliably.
+# ex_init.sh and °customization.sh are not executed, so the helper never ran.
+if [ -x "/mnt/SDCARD/System/usr/trimui/scripts/install-ssh-autostart.sh" ]; then
+    /mnt/SDCARD/System/usr/trimui/scripts/install-ssh-autostart.sh
+fi
 
     # retire obsolete debug/download-only entries; keep Firmware Update.sh
     rm -f "/mnt/SDCARD/Apps/SystemTools/Menu/TOOLS/Firmware Download.sh"
