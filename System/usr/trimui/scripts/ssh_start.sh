@@ -11,6 +11,18 @@
 # owning port 22 is the firmware's, which accepts passwords.
 
 [ -f /mnt/SDCARD/System/etc/ex_config ] && . /mnt/SDCARD/System/etc/ex_config
+
+# /etc/rc.local runs from S95done, which can get there before the card is
+# mounted: the helper is then unreadable and exits doing nothing, which is
+# exactly why the service looked enabled and never came up. The script lives in
+# /etc for that reason, and waits here for the config to appear.
+n=0
+while [ ! -r /mnt/SDCARD/System/etc/ex_config ] && [ "$n" -lt 60 ]; do
+	sleep 0.5
+	n=$((n + 1))
+done
+[ -f /mnt/SDCARD/System/etc/ex_config ] && . /mnt/SDCARD/System/etc/ex_config
+
 [ "$NETWORK_SSH" = "Y" ] || exit 0
 
 LOG="/mnt/SDCARD/System/updates/ssh-diag.log"
