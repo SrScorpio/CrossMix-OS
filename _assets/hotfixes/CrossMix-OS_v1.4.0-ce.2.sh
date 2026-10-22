@@ -2,6 +2,8 @@
 # CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.20
 # Channel: served by ota_update.sh when releases/latest has nothing newer.
 # Fixes:
+#  - ssh_start: pidof+lock instead of ps (busybox ps cannot see the server, so
+#    the guard never matched and the surviving dropbear accepted passwords)
 #  - telnetd no longer starts as unauthenticated root (#66)
 #  - cpufreq accepts schedutil and applies to every policy
 #  - noop I/O scheduler + 1MB read-ahead for SD/eMMC
@@ -21,7 +23,7 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.21"
+Remote_HotfixVersion="1.4.0-ce.2.22"
 Remote_HotfixDate="2026-10-19"
 Remote_HotfixDesc="- The boot logo flashed on first boot is now the SE mark, with a fallback to the stock one on cards that lack it; splash already shows CrossMix-OS SE"
 
