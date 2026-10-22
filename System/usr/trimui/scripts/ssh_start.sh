@@ -80,7 +80,20 @@ if [ -f "$AUTH" ]; then
 	OPTS="-s"
 fi
 
-nice -2 dropbear -r "$KEYDIR/dropbear_ed25519_host_key" $OPTS -p 22 >>"$LOG" 2>&1 &
+# Resolve the binary explicitly: dropbear ships on the card, not in /usr/sbin, so
+# a bare "dropbear" depends on the caller's PATH. From rc.local that failed and
+# the error went to the log while nothing listened.
+DROPBEAR="/mnt/SDCARD/System/bin/dropbear"
+[ -x "$DROPBEAR" ] || DROPBEAR=$(command -v dropbear 2>/dev/null)
+if [ ! -x "$DROPBEAR" ]; then
+	echo "ssh_start: dropbear binary not found" >> "$LOG"
+	exit 1
+fi
+
+# setsid is not cosmetic: a background child of a script started by init dies with
+# its parent, which is why the server appeared in the log and was gone by the time
+# the boot finished.
+setsid "$DROPBEAR" -r "$KEYDIR/dropbear_ed25519_host_key" $OPTS -p 22 >>"$LOG" 2>&1 &
 sleep 3
 
 {
