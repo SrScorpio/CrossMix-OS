@@ -2,6 +2,8 @@
 # CrossMix-OS SE/CE - hotfix v1.4.0-ce.2.20
 # Channel: served by ota_update.sh when releases/latest has nothing newer.
 # Fixes:
+#  - ssh: the init PATH is /bin:/sbin only - setsid and dropbear are resolved by
+#    absolute path and the helper sets a full PATH itself
 #  - ssh: dropbear resolved by absolute path (it lives on the card, not in
 #    /usr/sbin) and started with setsid, or it dies with the init script
 #  - ssh autostart: helper copied to /etc (S95done can run before the card is
@@ -29,7 +31,7 @@
 source /mnt/SDCARD/System/usr/trimui/scripts/update_common.sh
 cmd=$1
 
-Remote_HotfixVersion="1.4.0-ce.2.25"
+Remote_HotfixVersion="1.4.0-ce.2.26"
 Remote_HotfixDate="2026-10-19"
 Remote_HotfixDesc="- The boot logo flashed on first boot is now the SE mark, with a fallback to the stock one on cards that lack it; splash already shows CrossMix-OS SE"
 
