@@ -61,7 +61,7 @@ if [ -n "$PIDS" ]; then
 	sleep 1
 fi
 
-export PATH="/mnt/SDCARD/System/bin:$PATH"
+export PATH="/mnt/SDCARD/System/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export LD_LIBRARY_PATH="/mnt/SDCARD/System/lib:/usr/trimui/lib:$LD_LIBRARY_PATH"
 
 KEYDIR="/etc/dropbear"
@@ -92,8 +92,13 @@ fi
 
 # setsid is not cosmetic: a background child of a script started by init dies with
 # its parent, which is why the server appeared in the log and was gone by the time
-# the boot finished.
-setsid "$DROPBEAR" -r "$KEYDIR/dropbear_ed25519_host_key" $OPTS -p 22 >>"$LOG" 2>&1 &
+# the boot finished. It lives in /usr/bin, so resolve it explicitly too.
+SETSID=$(command -v setsid 2>/dev/null)
+if [ -n "$SETSID" ]; then
+	$SETSID "$DROPBEAR" -r "$KEYDIR/dropbear_ed25519_host_key" $OPTS -p 22 >>"$LOG" 2>&1 &
+else
+	nohup "$DROPBEAR" -r "$KEYDIR/dropbear_ed25519_host_key" $OPTS -p 22 >>"$LOG" 2>&1 &
+fi
 sleep 3
 
 {

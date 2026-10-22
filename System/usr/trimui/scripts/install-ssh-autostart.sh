@@ -53,7 +53,7 @@ cat >> "$TMP" <<'EOF'
 # CrossMix-OS SE: reached from /etc/init.d/done (S95done) -> sh /etc/rc.local
 # Beacon first: proves init got here even when SSH does not come up.
 echo "rc.local ran $(date); sdcard=$(mount | grep -c SDCARD)" >> /tmp/rc-beacon.log
-setsid /etc/ssh_start.sh >> /tmp/rc-beacon.log 2>&1 &
+/usr/bin/setsid /etc/ssh_start.sh >> /tmp/rc-beacon.log 2>&1 &
 EOF
 
 if [ -n "$LINE" ]; then
