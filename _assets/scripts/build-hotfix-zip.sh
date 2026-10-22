@@ -48,6 +48,7 @@ System/starts/°post_starts.sh
 System/usr/trimui/scripts/cpufreq.sh
 System/usr/trimui/scripts/io_scheduler.sh
 Apps/SystemTools/Menu/NETWORK##TELNET (state)/TELNET Server  - enable.sh
+System/usr/trimui/scripts/install-ssh-autostart.sh
 "
 
 missing=0
